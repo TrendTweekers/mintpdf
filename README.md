@@ -30,7 +30,7 @@ get a clean PDF back, from your code or straight from an AI agent via MCP.
 No signup, no key:
 
 ```bash
-curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
+curl -X POST https://mintpdf.dev/v1/pdf \
   -H "Content-Type: application/json" \
   -d '{"markdown":"# Invoice #42\n\n| Item | Price |\n|---|---|\n| Widget | $9.00 |","pageNumbers":true}' \
   --output invoice.pdf
@@ -39,7 +39,7 @@ curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
 Want more than 3 renders a day? A free key (email only, no card) raises it to 100 a month:
 
 ```bash
-curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/keys \
+curl -X POST https://mintpdf.dev/v1/keys \
   -H "Content-Type: application/json" \
   -d '{"email":"you@example.com"}'
 # → {"key":"pm_…","daily_limit":100}   # 100 renders per month
@@ -67,7 +67,7 @@ Prefer the hosted endpoint directly? Use `mcp-remote` instead:
   "mcpServers": {
     "mintpdf": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://pdfmint-production-0b25.up.railway.app/mcp"]
+      "args": ["-y", "mcp-remote", "https://mintpdf.dev/mcp"]
     }
   }
 }

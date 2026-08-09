@@ -11,7 +11,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://pdfmint-production-0b25.up.railway.app/mcp"
+      "url": "https://mintpdf.dev/mcp"
     }
   ]
 }

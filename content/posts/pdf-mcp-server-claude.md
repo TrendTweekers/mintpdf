@@ -20,7 +20,7 @@ Add this to your MCP client config (for Claude Desktop, `claude_desktop_config.j
   "mcpServers": {
     "mintpdf": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://pdfmint-production-0b25.up.railway.app/mcp"]
+      "args": ["-y", "mcp-remote", "https://mintpdf.dev/mcp"]
     }
   }
 }
@@ -80,7 +80,7 @@ control, send `html` instead of `markdown` and your own CSS is used as-is.
 The same capability is a plain HTTP endpoint:
 
 ```bash
-curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
+curl -X POST https://mintpdf.dev/v1/pdf \
   -H "Content-Type: application/json" \
   -d '{"markdown":"# Test\n\nGenerated via API.","pageNumbers":true}' \
   --output test.pdf

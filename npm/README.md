@@ -37,7 +37,7 @@ Works with no key at all for a few renders a day. A free key (email only, no car
 a month:
 
 ```bash
-curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/keys \
+curl -X POST https://mintpdf.dev/v1/keys \
   -H "Content-Type: application/json" -d '{"email":"you@example.com"}'
 ```
 

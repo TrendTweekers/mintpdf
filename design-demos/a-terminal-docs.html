@@ -77,7 +77,7 @@
     <div class="term">
       <div class="term-bar">terminal — your first PDF, no signup</div>
 <pre><span class="cm"># 1. render markdown to a PDF</span>
-<span class="p1"><span class="kk">$ curl</span> -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
+<span class="p1"><span class="kk">$ curl</span> -X POST https://mintpdf.dev/v1/pdf \
     -H <span class="ss">"Content-Type: application/json"</span> \
     -d <span class="ss">'{"markdown":"# Invoice #42\n\nThanks for your business.","pageNumbers":true}'</span> \
     --output invoice.pdf</span>
@@ -96,7 +96,7 @@
   <span class="ss">"mcpServers"</span>: {
     <span class="ss">"pdfmint"</span>: {
       <span class="ss">"command"</span>: <span class="ss">"npx"</span>,
-      <span class="ss">"args"</span>: [<span class="ss">"-y"</span>, <span class="ss">"mcp-remote"</span>, <span class="ss">"https://pdfmint-production-0b25.up.railway.app/mcp"</span>]
+      <span class="ss">"args"</span>: [<span class="ss">"-y"</span>, <span class="ss">"mcp-remote"</span>, <span class="ss">"https://mintpdf.dev/mcp"</span>]
     }
   }
 }</span></pre>

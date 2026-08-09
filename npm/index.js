@@ -13,7 +13,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const BASE_URL = (process.env.MINTPDF_BASE_URL ?? "https://pdfmint-production-0b25.up.railway.app").replace(/\/$/, "");
+const BASE_URL = (process.env.MINTPDF_BASE_URL ?? "https://mintpdf.dev").replace(/\/$/, "");
 const API_KEY = process.env.MINTPDF_API_KEY ?? "";
 
 const options = {
