@@ -26,6 +26,7 @@ RUN npm ci --omit=dev && npx puppeteer browsers install chrome && npm cache clea
 
 COPY --from=build /app/dist ./dist
 COPY public ./public
+COPY content ./content
 
 ENV DATA_DIR=/data
 EXPOSE 3000
