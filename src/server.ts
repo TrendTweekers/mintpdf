@@ -33,10 +33,6 @@ app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, 
   }
 });
 
-await app.register(fastifyStatic, {
-  root: join(dirname(fileURLToPath(import.meta.url)), "..", "public"),
-});
-
 // RFC 8288 Link headers so agents can discover our machine-readable descriptions from any response.
 app.addHook("onSend", async (req, reply, payload) => {
   if (req.method === "GET" && !req.url.startsWith("/f/")) {
@@ -59,6 +55,10 @@ app.addHook("onSend", async (req, reply, payload) => {
   if (req.url === "/.well-known/api-catalog") reply.header("content-type", "application/linkset+json");
   if (req.url.endsWith("SKILL.md") || req.url === "/auth.md") reply.header("content-type", "text/markdown; charset=utf-8");
   return payload;
+});
+
+await app.register(fastifyStatic, {
+  root: join(dirname(fileURLToPath(import.meta.url)), "..", "public"),
 });
 
 // Consolidate SEO signal on one hostname once a custom domain exists.
