@@ -5,9 +5,12 @@ import { dirname, join } from "node:path";
 import { htmlToPdf, markdownToPdf, urlToPdf, closeBrowser, PdfOptions } from "./pdf.js";
 import { LIMITS, consumeQuota, createKey, keyExists, readPdf, storePdf } from "./store.js";
 import { handleMcpRequest } from "./mcp.js";
+import { getPost, renderIndex, renderPost, renderSitemap } from "./blog.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
 const BASE_URL = process.env.BASE_URL ?? `http://localhost:${PORT}`;
+/** Set once a custom domain is live; every other host 301s here so early links keep their value. */
+const CANONICAL_HOST = process.env.CANONICAL_HOST ?? "";
 
 const app = Fastify({
   logger: true,
@@ -17,6 +20,15 @@ const app = Fastify({
 
 await app.register(fastifyStatic, {
   root: join(dirname(fileURLToPath(import.meta.url)), "..", "public"),
+});
+
+// Consolidate SEO signal on one hostname once a custom domain exists.
+app.addHook("onRequest", async (req, reply) => {
+  if (!CANONICAL_HOST) return;
+  const host = String(req.headers.host ?? "");
+  if (host && host !== CANONICAL_HOST && req.method === "GET") {
+    return reply.code(301).redirect(`https://${CANONICAL_HOST}${req.url}`);
+  }
 });
 
 interface PdfBody extends PdfOptions {
@@ -108,6 +120,24 @@ app.post("/mcp", async (req, reply) => {
   await handleMcpRequest(BASE_URL, req.raw, reply.raw, req.body);
 });
 app.get("/mcp", async (_req, reply) => reply.code(405).send({ error: "POST only (stateless transport)" }));
+
+app.get("/guides", async (_req, reply) =>
+  reply.type("text/html; charset=utf-8").send(renderIndex(BASE_URL)),
+);
+
+app.get<{ Params: { slug: string } }>("/guides/:slug", async (req, reply) => {
+  const post = getPost(req.params.slug);
+  if (!post) return reply.code(404).type("text/html").send("<h1>404</h1><p><a href='/guides'>All guides</a></p>");
+  return reply.type("text/html; charset=utf-8").send(renderPost(post, BASE_URL));
+});
+
+app.get("/sitemap.xml", async (_req, reply) =>
+  reply.type("application/xml").send(renderSitemap(BASE_URL)),
+);
+
+app.get("/robots.txt", async (_req, reply) =>
+  reply.type("text/plain").send(`User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`),
+);
 
 app.get("/health", async () => ({ ok: true }));
 
