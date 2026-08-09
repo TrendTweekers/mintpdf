@@ -513,26 +513,6 @@ app.get("/robots.txt", async (_req, reply) =>
 
 app.get("/health", async () => ({ ok: true }));
 
-// Temporary: where is state actually being written, and does it survive deploys?
-app.get("/internal/diag", async (req, reply) => {
-  const auth = String(req.headers.authorization ?? "");
-  if (!process.env.INDEXNOW_KEY || auth !== `Bearer ${process.env.INDEXNOW_KEY}`) {
-    return reply.code(401).send({ error: "unauthorized" });
-  }
-  const { statSync, existsSync, readdirSync } = await import("node:fs");
-  const dir = process.env.DATA_DIR ?? "(unset, default /tmp/mintpdf)";
-  const dbPath = `${process.env.DATA_DIR ?? "/tmp/mintpdf"}/mintpdf.db`;
-  return {
-    DATA_DIR: dir,
-    dbPath,
-    dbExists: existsSync(dbPath),
-    dbBytes: existsSync(dbPath) ? statSync(dbPath).size : 0,
-    dataDirContents: existsSync(dir) ? readdirSync(dir) : "missing",
-    keyCount: countKeys(),
-    bootedAt: BOOTED_AT,
-  };
-});
-
 const shutdown = async () => {
   await closeBrowser();
   await app.close();

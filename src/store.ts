@@ -48,10 +48,6 @@ export function dailyLimitFor(tier: Tier): number {
   return tier === "solo" ? LIMITS.solo : LIMITS.free;
 }
 
-export function countKeys(): number {
-  return (db.prepare("SELECT COUNT(*) AS n FROM api_keys").get() as { n: number }).n;
-}
-
 export function createKey(email: string): string {
   const key = "pm_" + randomBytes(24).toString("base64url");
   db.prepare("INSERT INTO api_keys (key, email, created_at, tier) VALUES (?, ?, ?, 'free')").run(
