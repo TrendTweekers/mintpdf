@@ -10,7 +10,7 @@ import {
 import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, PolarEvent } from "./polar.js";
 import { handleMcpRequest } from "./mcp.js";
 import { getPost, renderIndex, renderPost, renderSitemap } from "./blog.js";
-import { notify, notifyOnce, notifyEnabled, escapeHtml } from "./notify.js";
+import { notify, notifyOnce, notifyEnabled, escapeHtml, locate, firstToday } from "./notify.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
 const BASE_URL = process.env.BASE_URL ?? `http://localhost:${PORT}`;
@@ -55,11 +55,14 @@ app.addHook("onResponse", async (req, reply) => {
   const ref = String(req.headers.referer ?? "");
   const ua = String(req.headers["user-agent"] ?? "");
   if (/bot|crawler|spider|preview|monitor|curl|headless/i.test(ua)) return;
-  notifyOnce(
-    `visit:${req.ip}`,
-    `👀 <b>Visitor</b>\n${escapeHtml(path)}` +
-      (ref ? `\nfrom: ${escapeHtml(ref)}` : "\nfrom: direct") +
-      `\n<code>${escapeHtml(req.ip)}</code>`,
+  if (!firstToday(`visit:${req.ip}`)) return;
+  // Geo lookup happens after the dedupe check so it runs at most once per visitor per day.
+  const where = await locate(req.ip, String(req.headers["cf-ipcountry"] ?? ""));
+  notify(
+    `👀 <b>Visitor</b>` +
+      (where ? `  ${where}` : "") +
+      `\n${escapeHtml(path)}` +
+      (ref ? `\nfrom: ${escapeHtml(ref)}` : "\nfrom: direct"),
   );
 });
 
