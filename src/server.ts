@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { htmlToPdf, markdownToPdf, urlToPdf, closeBrowser, PdfOptions } from "./pdf.js";
 import {
   LIMITS, consumeQuota, createKey, getKey, findKeyByEmail, findKeyBySubscription,
-  setTier, dailyLimitFor, readPdf, storePdf,
+  setTier, dailyLimitFor, readPdf, storePdf, countKeys,
 } from "./store.js";
 import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, PolarEvent } from "./polar.js";
 import { handleMcpRequest } from "./mcp.js";
@@ -16,6 +16,7 @@ const PORT = Number(process.env.PORT ?? 3000);
 const BASE_URL = process.env.BASE_URL ?? `http://localhost:${PORT}`;
 /** Set once a custom domain is live; every other host 301s here so early links keep their value. */
 const CANONICAL_HOST = process.env.CANONICAL_HOST ?? "";
+const BOOTED_AT = new Date().toISOString();
 
 const app = Fastify({
   logger: true,
@@ -392,6 +393,26 @@ app.get("/robots.txt", async (_req, reply) =>
 );
 
 app.get("/health", async () => ({ ok: true }));
+
+// Temporary: where is state actually being written, and does it survive deploys?
+app.get("/internal/diag", async (req, reply) => {
+  const auth = String(req.headers.authorization ?? "");
+  if (!process.env.INDEXNOW_KEY || auth !== `Bearer ${process.env.INDEXNOW_KEY}`) {
+    return reply.code(401).send({ error: "unauthorized" });
+  }
+  const { statSync, existsSync, readdirSync } = await import("node:fs");
+  const dir = process.env.DATA_DIR ?? "(unset, default /tmp/mintpdf)";
+  const dbPath = `${process.env.DATA_DIR ?? "/tmp/mintpdf"}/mintpdf.db`;
+  return {
+    DATA_DIR: dir,
+    dbPath,
+    dbExists: existsSync(dbPath),
+    dbBytes: existsSync(dbPath) ? statSync(dbPath).size : 0,
+    dataDirContents: existsSync(dir) ? readdirSync(dir) : "missing",
+    keyCount: countKeys(),
+    bootedAt: BOOTED_AT,
+  };
+});
 
 const shutdown = async () => {
   await closeBrowser();
