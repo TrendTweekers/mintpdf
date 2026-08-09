@@ -155,9 +155,11 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
   }
 
   const source = body.html ? "html" : body.markdown ? "markdown" : "url";
+  const fromTool = String(req.headers.referer ?? "").includes("/markdown-to-pdf");
   notifyOnce(
     `render:${quota.keyed ? "key" : "ip"}:${quota.keyed ? String(req.headers.authorization).slice(-8) : req.ip}`,
-    `📄 <b>PDF rendered</b>\nsource: ${source} · ${quota.keyed ? "keyed" : "anonymous"}\n` +
+    `📄 <b>PDF rendered</b>${fromTool ? " (free converter page)" : ""}\n` +
+      `source: ${source} · ${quota.keyed ? "keyed" : "anonymous"}\n` +
       `size: ${Math.round(pdf.length / 1024)} KB`,
   );
 

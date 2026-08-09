@@ -95,7 +95,7 @@ export const STYLE = `
 
   .body-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
   article{max-width:74ch}
-  .tag{position:absolute;top:10px;right:14px;color:var(--mut);font-size:.62rem;letter-spacing:.14em}
+  .tag{position:absolute;top:10px;right:14px;color:#4aa885;font-size:.68rem;letter-spacing:.14em;font-weight:600}
 
   h1{font-size:clamp(1.6rem,3vw,2.3rem);line-height:1.15;letter-spacing:-.02em;margin:0 0 12px}
   h2{font-size:1.25rem;margin:34px 0 10px;letter-spacing:-.01em}
