@@ -1,0 +1,35 @@
+{
+  "name": "mintpdf-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that turns HTML or Markdown into a styled PDF, or renders a public URL to PDF.",
+  "type": "module",
+  "bin": {
+    "mintpdf-mcp": "index.js"
+  },
+  "files": ["index.js", "README.md"],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "mcp-server",
+    "pdf",
+    "markdown-to-pdf",
+    "html-to-pdf",
+    "claude",
+    "ai-agents"
+  ],
+  "license": "MIT",
+  "author": "TrendTweekers",
+  "homepage": "https://github.com/TrendTweekers/mintpdf",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TrendTweekers/mintpdf.git",
+    "directory": "npm"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.0"
+  }
+}

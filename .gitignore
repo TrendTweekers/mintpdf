@@ -5,3 +5,5 @@ dist/
 .chrome/
 chrome/
 chrome-headless-shell/
+npm/node_modules/
+npm/package-lock.json
