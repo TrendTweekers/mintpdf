@@ -317,11 +317,13 @@
   var paperEl = document.getElementById('paper');
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  if (rot && srcEl && paperEl && !reduce) {
+  if (rot && srcEl && paperEl) {
     var i = 0;
+    var first = true;
     var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
     async function typeInto(el, text, speed) {
+      if (reduce) { el.textContent = text; return; }
       el.textContent = '';
       for (var n = 0; n < text.length; n++) {
         el.textContent += text[n];
@@ -329,13 +331,15 @@
       }
     }
     async function eraseWord(el) {
+      if (reduce) { el.textContent = ''; return; }
       var t = el.textContent;
       while (t.length) { t = t.slice(0, -1); el.textContent = t; await wait(38); }
     }
 
     (async function loop() {
       while (true) {
-        await wait(4200);
+        await wait(first ? 1500 : 4600);
+        first = false;
         i = (i + 1) % MODES.length;
         var m = MODES[i];
         statusEl.classList.add('busy');
