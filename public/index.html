@@ -20,7 +20,10 @@
   .board { max-width:1560px; margin:0 auto; padding:26px 28px; display:grid; gap:14px;
            grid-template-columns:repeat(12, 1fr); }
   .cell { background:var(--cell); border:1px solid var(--line); border-radius:10px; padding:22px 26px;
-          position:relative; overflow:hidden; transition:border-color .15s; }
+          position:relative; overflow:hidden; transition:border-color .15s;
+          display:flex; flex-direction:column; }
+  .cell .foot { margin-top:auto; padding-top:14px; }
+  .cell .rule { border-top:1px solid var(--line); margin:16px 0 0; }
   .cell:hover { border-color:#2f4b40; }
   .tag { position:absolute; top:10px; right:14px; color:var(--mut); font-size:.62rem; letter-spacing:.14em; }
   .c12{grid-column:span 12} .c8{grid-column:span 8} .c6{grid-column:span 6}
@@ -119,6 +122,13 @@
     <p class="sub sans">A PDF API for developers and AI agents. No template editor, no template IDs,
     no dashboard. One POST request or one MCP tool call; Markdown ships with a stylesheet that makes
     agent-written documents look right by default.</p>
+    <div class="foot">
+      <table class="spec">
+        <tr><td>built for</td><td>invoices · receipts · reports · agent output</td></tr>
+        <tr><td>send</td><td>Markdown, HTML, or a public URL</td></tr>
+        <tr><td>get back</td><td>PDF bytes, or a link that expires in an hour</td></tr>
+      </table>
+    </div>
   </div>
 
   <div class="cell c5">
@@ -137,7 +147,12 @@
 <span class="k">curl</span> -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">'{"markdown":"# Invoice #42\n\n| Item | Price |\n|---|---|\n| Widget | $9.00 |\n| Gadget | $24.00 |","pageNumbers":true}'</span> \
-  --output invoice.pdf</pre>
+  --output invoice.pdf
+
+<span class="cm"># → 200 application/pdf · one A4 page, table already styled</span>
+
+<span class="cm"># want a link instead of bytes? add:</span>
+  <span class="s">"output": "url"</span>  <span class="cm">→ {"download_url": "…", "expires_at": "…"}</span></pre>
   </div>
 
   <div class="cell c5">
@@ -147,7 +162,7 @@
   <span class="s">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"mcp-remote"</span>,
     <span class="s">"https://pdfmint-production-0b25.up.railway.app/mcp"</span>]
 }</pre>
-    <table class="spec">
+    <table class="spec foot">
       <tr><td>tools</td><td>generate_pdf · pdf_from_url</td></tr>
       <tr><td>transport</td><td>streamable HTTP, stateless</td></tr>
       <tr><td>returns</td><td>download URL, 1h TTL</td></tr>
@@ -163,6 +178,12 @@
       <button type="submit">GET KEY</button>
     </form>
     <div id="keyout" class="keyout">No card. One email, one key, instantly.</div>
+    <div class="foot">
+      <div class="rule"></div>
+<pre><span class="cm"># or from the terminal</span>
+<span class="k">curl</span> -X POST …/v1/keys \
+  -d <span class="s">'{"email":"you@example.com"}'</span></pre>
+    </div>
   </div>
 
   <div class="cell c4">
@@ -191,7 +212,8 @@
       <input id="upkey" type="text" required placeholder="pm_… your key" aria-label="Your API key">
       <button type="submit">UPGRADE</button>
     </form>
-    <div id="upout" class="keyout">Upgrades the key you already have. No seats, no sales calls, cancel anytime.</div>
+    <div id="upout" class="keyout foot">Upgrades the key you already have. No seats, no sales calls,
+    cancel anytime.</div>
   </div>
 
   <div class="cell c12">
