@@ -265,6 +265,18 @@
 
 <script>
 (function () {
+  // Report a real visit only after a few seconds of dwell, with JS actually running.
+  setTimeout(function () {
+    try {
+      fetch('/v1/beacon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ path: location.pathname, ref: document.referrer })
+      });
+    } catch (e) { /* never let analytics break the page */ }
+  }, 4000);
+
   var form = document.getElementById('keyform');
   var out = document.getElementById('keyout');
   form.addEventListener('submit', async function (e) {

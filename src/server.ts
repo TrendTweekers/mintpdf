@@ -46,21 +46,17 @@ app.addHook("onRequest", async (req, reply) => {
   }
 });
 
-// One ping per visitor per day, on page views only. Referrer is the useful part.
-app.addHook("onResponse", async (req, reply) => {
-  if (!notifyEnabled || req.method !== "GET" || reply.statusCode !== 200) return;
-  const path = req.url.split("?")[0];
-  const isPage = path === "/" || path === "/guides" || path.startsWith("/guides/");
-  if (!isPage) return;
-  const ref = String(req.headers.referer ?? "");
+app.post<{ Body: { path?: string; ref?: string } }>("/v1/beacon", async (req, reply) => {
+  reply.code(204).send();
+  if (!notifyEnabled) return;
   const ua = String(req.headers["user-agent"] ?? "");
   if (/bot|crawler|spider|preview|monitor|curl|headless/i.test(ua)) return;
   if (!firstToday(`visit:${req.ip}`)) return;
-  // Geo lookup happens after the dedupe check so it runs at most once per visitor per day.
+  const path = String(req.body?.path ?? "/").slice(0, 120);
+  const ref = String(req.body?.ref ?? "").slice(0, 200);
   const where = await locate(req.ip, String(req.headers["cf-ipcountry"] ?? ""));
   notify(
-    `👀 <b>Visitor</b>` +
-      (where ? `  ${where}` : "") +
+    `👀 <b>Visitor</b>` + (where ? `  ${where}` : "") +
       `\n${escapeHtml(path)}` +
       (ref ? `\nfrom: ${escapeHtml(ref)}` : "\nfrom: direct"),
   );

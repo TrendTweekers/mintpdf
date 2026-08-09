@@ -119,6 +119,7 @@ function shell(opts: { title: string; description: string; canonical: string; bo
 <nav><div class="in"><a class="brand" href="/">${MARK}MintPDF</a>
 <a href="/guides">Guides</a><a class="cta" href="/#keys">GET FREE KEY</a></div></nav>
 ${opts.body}
+<script>setTimeout(function(){try{fetch('/v1/beacon',{method:'POST',headers:{'Content-Type':'application/json'},keepalive:true,body:JSON.stringify({path:location.pathname,ref:document.referrer})});}catch(e){}},4000);</script>
 <footer>MintPDF · <a href="/">API</a> · <a href="/guides">Guides</a> ·
 <a href="https://github.com/TrendTweekers/mintpdf">GitHub</a></footer>
 </body></html>`;
