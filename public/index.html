@@ -121,6 +121,26 @@
   .keyout .copy { background:none; border:1px solid var(--line); color:var(--mut); border-radius:5px;
                   padding:2px 7px; font-size:.68rem; cursor:pointer; font-family:inherit; margin-left:6px; }
   .keyout .copy:hover { color:var(--ink); border-color:var(--acc); }
+  .pipe { display:grid; grid-template-columns:1.2fr .8fr; gap:26px; margin-top:14px; }
+  .term { background:#070b09; border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+  .term-bar { display:flex; align-items:center; gap:7px; padding:8px 13px; background:#0c1210;
+              border-bottom:1px solid var(--line); }
+  .term-bar .d { width:9px; height:9px; border-radius:50%; background:#2c3f38; }
+  .term-bar .t { color:#4f6a5e; font-size:.7rem; margin-left:8px; letter-spacing:.04em; }
+  .term pre { margin:0; padding:16px 18px; font-size:.8rem; line-height:1.75; overflow-x:auto;
+              color:#8ea69c; }
+  .term .p  { color:var(--acc); }
+  .term .c  { color:#cfe4db; }
+  .term .s  { color:#9ecbff; }
+  .term .o  { color:#6f877c; }
+  .term .ok { color:var(--acc); }
+  .steps { display:flex; flex-direction:column; gap:2px; }
+  .step { padding:14px 0; border-top:1px solid var(--line); }
+  .step:first-child { border-top:none; padding-top:0; }
+  .step .n { color:var(--acc); font-size:.7rem; letter-spacing:.14em; }
+  .step h3 { margin:5px 0 5px; font-size:1rem; font-weight:700; }
+  .step p { margin:0; color:var(--mut); font-size:.88rem; line-height:1.6; }
+  @media (max-width:1000px){ .pipe { grid-template-columns:1fr; } }
   .tierline { border-top:1px solid var(--line); margin:18px 0 14px; }
   .big { font-size:1.7rem; font-weight:700; }
   .big small { color:var(--mut); font-size:.75rem; font-weight:400; }
@@ -219,8 +239,60 @@
     </table>
   </div>
 
+  <div class="cell c12">
+    <span class="tag">05 · HOW IT WORKS</span>
+    <h2 class="sans" style="margin:0;font-size:1.35rem;letter-spacing:-.02em">One request. Chromium renders it. You get a document.</h2>
+    <div class="pipe">
+      <div class="term">
+        <div class="term-bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+          <span class="t">bash — a real session</span></div>
+<pre><span class="o"># send content, not a template id</span>
+<span class="p">$</span> <span class="c">curl -sS -X POST https://mintpdf.dev/v1/pdf \
+     -H 'Content-Type: application/json' \
+     -d '{"markdown":"# Q3 report\n\nRevenue grew **12%**.",
+          "pageNumbers":true, "footerText":"Acme Ltd"}' \
+     -o report.pdf -D -</span>
+
+<span class="o">HTTP/2 200</span>
+<span class="o">content-type: application/pdf</span>
+<span class="o">x-ratelimit-remaining: 2</span>
+
+<span class="p">$</span> <span class="c">pdfinfo report.pdf | head -3</span>
+<span class="o">Pages:          3
+Page size:      595 x 842 pts (A4)
+File size:      166 kB</span>
+
+<span class="o"># prefer a link? add "output":"url"</span>
+<span class="p">$</span> <span class="c">curl -sS …/v1/pdf -d '{"markdown":"# Hi","output":"url"}'</span>
+<span class="o">{"download_url":"https://mintpdf.dev/f/…",
+ "expires_at":"…","size_bytes":6751}</span>  <span class="ok">✓</span>
+<span class="o"># the file is deleted an hour later</span></pre>
+      </div>
+      <div class="steps sans">
+        <div class="step">
+          <div class="n">01 · SEND</div>
+          <h3>Markdown, HTML, or a URL</h3>
+          <p>One POST, or one MCP tool call from an agent. No template to design first, no template id
+          to keep in sync with your code.</p>
+        </div>
+        <div class="step">
+          <div class="n">02 · RENDER</div>
+          <h3>Headless Chromium, with print CSS that behaves</h3>
+          <p>Markdown gets a stylesheet that keeps code blocks and tables whole across page breaks and
+          repeats table headers. Send HTML instead and your own CSS is used as-is.</p>
+        </div>
+        <div class="step">
+          <div class="n">03 · TAKE IT</div>
+          <h3>PDF bytes, or a link that expires</h3>
+          <p>Stream the file straight into your response, or take a download URL valid for one hour.
+          Nothing is stored afterwards.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="cell c4" id="keys">
-    <span class="tag">05 · FREE KEY</span>
+    <span class="tag">06 · FREE KEY</span>
     <div class="big">100<small> renders/month, free</small></div>
     <p class="sub sans" style="margin:6px 0 0;font-size:.8rem">One email, one key, no card. Or try
     3 renders a day with no signup at all.</p>
@@ -238,7 +310,7 @@
   </div>
 
   <div class="cell c4">
-    <span class="tag">06 · OPTIONS</span>
+    <span class="tag">07 · OPTIONS</span>
     <table class="spec">
       <tr><td>format</td><td>A4 · Letter · Legal · A3 · A5</td></tr>
       <tr><td>margin</td><td>any, e.g. "18mm"</td></tr>
@@ -250,7 +322,7 @@
   </div>
 
   <div class="cell c4" id="pricing">
-    <span class="tag">07 · PRICE</span>
+    <span class="tag">08 · PRICE</span>
     <div class="big sans">Free<small> · 100 renders/month</small></div>
     <ul class="flat sans">
       <li>REST API and MCP server, both included</li>
@@ -268,7 +340,7 @@
   </div>
 
   <div class="cell c12">
-    <span class="tag">08 · RETENTION</span>
+    <span class="tag">09 · RETENTION</span>
     <p class="sub sans" style="margin:0">Your documents are rendered and forgotten.
     <b style="color:var(--ink)">Generated files auto-delete after one hour.</b> No accounts, no
     document storage, no tracking of what you render. Requests to private and internal addresses
