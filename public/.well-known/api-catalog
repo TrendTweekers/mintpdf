@@ -1,0 +1,16 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://mintpdf.dev/v1/pdf",
+      "service-desc": [{ "href": "https://mintpdf.dev/openapi.json", "type": "application/json" }],
+      "service-doc": [{ "href": "https://mintpdf.dev", "type": "text/html" }],
+      "service-meta": [{ "href": "https://mintpdf.dev/llms.txt", "type": "text/plain" }],
+      "status": [{ "href": "https://mintpdf.dev/health", "type": "application/json" }]
+    },
+    {
+      "anchor": "https://mintpdf.dev/mcp",
+      "service-desc": [{ "href": "https://mintpdf.dev/.well-known/mcp.json", "type": "application/json" }],
+      "service-doc": [{ "href": "https://mintpdf.dev/guides/pdf-mcp-server-claude", "type": "text/html" }]
+    }
+  ]
+}

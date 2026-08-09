@@ -51,6 +51,18 @@ export function getPosts(): Post[] {
   return (cache = posts);
 }
 
+/** Raw markdown source of a post, for Accept: text/markdown negotiation. */
+export function getPostSource(slug: string): string | undefined {
+  if (!existsSync(POSTS_DIR)) return undefined;
+  for (const f of readdirSync(POSTS_DIR)) {
+    if (!f.endsWith(".md")) continue;
+    const raw = readFileSync(join(POSTS_DIR, f), "utf8");
+    const { meta, content } = parseFrontmatter(raw);
+    if ((meta.slug ?? f.replace(/\.md$/, "")) === slug) return content.trim();
+  }
+  return undefined;
+}
+
 export function getPost(slug: string): Post | undefined {
   return getPosts().find((p) => p.slug === slug);
 }

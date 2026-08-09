@@ -1,0 +1,13 @@
+{
+  "$schema": "https://agentskills.io/schemas/v0.2.0/index.json",
+  "version": "0.2.0",
+  "skills": [
+    {
+      "name": "generate-pdf",
+      "type": "skill-md",
+      "description": "Turn HTML or Markdown into a styled PDF, or render a public web page to PDF, and get a download link.",
+      "url": "https://mintpdf.dev/.well-known/agent-skills/generate-pdf/SKILL.md",
+      "sha256": "ce67148b4fd5742fe89b2a89785e5084fb4c0cbf4e52638f9295b87ad327b10b"
+    }
+  ]
+}

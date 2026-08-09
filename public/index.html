@@ -289,6 +289,34 @@
 
 <script>
 (function () {
+  // WebMCP: let a browser-side agent generate a PDF straight from this page.
+  if (navigator.modelContext && navigator.modelContext.registerTool) {
+    try {
+      navigator.modelContext.registerTool({
+        name: 'generate_pdf',
+        description: 'Turn Markdown or HTML into a styled PDF and return a download URL valid for one hour.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            markdown: { type: 'string', description: 'Markdown content to render' },
+            html: { type: 'string', description: 'HTML to render instead of markdown' },
+            pageNumbers: { type: 'boolean', description: 'Show page numbers in the footer' },
+            format: { type: 'string', enum: ['A4', 'Letter', 'Legal', 'A3', 'A5'] }
+          }
+        },
+        async execute(args) {
+          var res = await fetch('/v1/pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(Object.assign({ output: 'url' }, args))
+          });
+          var data = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(data) }] };
+        }
+      });
+    } catch (e) { /* WebMCP is still emerging; never break the page over it */ }
+  }
+
   // Report a real visit only after a few seconds of dwell, with JS actually running.
   setTimeout(function () {
     try {

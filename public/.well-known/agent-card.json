@@ -1,0 +1,37 @@
+{
+  "protocolVersion": "0.3.0",
+  "name": "MintPDF",
+  "description": "Turns HTML or Markdown into a styled PDF, or renders a public web page to PDF, and returns a download link valid for one hour.",
+  "version": "0.1.1",
+  "url": "https://mintpdf.dev/mcp",
+  "preferredTransport": "JSONRPC",
+  "provider": { "organization": "TrendTweekers", "url": "https://mintpdf.dev" },
+  "documentationUrl": "https://mintpdf.dev",
+  "capabilities": { "streaming": false, "pushNotifications": false, "stateTransitionHistory": false },
+  "defaultInputModes": ["text/plain", "text/markdown", "text/html", "application/json"],
+  "defaultOutputModes": ["application/pdf", "application/json"],
+  "supportedInterfaces": [
+    { "url": "https://mintpdf.dev/mcp", "transport": "streamable-http", "protocol": "mcp" },
+    { "url": "https://mintpdf.dev/v1/pdf", "transport": "http", "protocol": "rest" }
+  ],
+  "skills": [
+    {
+      "id": "generate_pdf",
+      "name": "Generate a PDF from HTML or Markdown",
+      "description": "Render HTML or Markdown into a styled PDF and return a download URL. Markdown is styled with a clean default stylesheet.",
+      "tags": ["pdf", "document", "markdown", "html", "invoice", "report"],
+      "examples": ["Turn this summary into a one-page PDF with page numbers", "Render this invoice markdown as an A4 PDF"],
+      "inputModes": ["text/markdown", "text/html", "application/json"],
+      "outputModes": ["application/pdf", "application/json"]
+    },
+    {
+      "id": "pdf_from_url",
+      "name": "Render a web page to PDF",
+      "description": "Load a public http(s) page and render it to PDF, returning a download URL.",
+      "tags": ["pdf", "web", "capture", "archive"],
+      "examples": ["Save this article as a PDF", "Capture this page as an A4 document"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/pdf", "application/json"]
+    }
+  ]
+}

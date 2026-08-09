@@ -9,7 +9,7 @@ import {
 } from "./store.js";
 import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, PolarEvent } from "./polar.js";
 import { handleMcpRequest } from "./mcp.js";
-import { getPost, getPosts, renderIndex, renderPost, renderSitemap } from "./blog.js";
+import { getPost, getPosts, getPostSource, renderIndex, renderPost, renderSitemap } from "./blog.js";
 import { notify, notifyOnce, notifyEnabled, escapeHtml, locate, firstToday } from "./notify.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -35,6 +35,30 @@ app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, 
 
 await app.register(fastifyStatic, {
   root: join(dirname(fileURLToPath(import.meta.url)), "..", "public"),
+});
+
+// RFC 8288 Link headers so agents can discover our machine-readable descriptions from any response.
+app.addHook("onSend", async (req, reply, payload) => {
+  if (req.method === "GET" && !req.url.startsWith("/f/")) {
+    reply.header(
+      "link",
+      [
+        `<${BASE_URL}/.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`,
+        `<${BASE_URL}/openapi.json>; rel="service-desc"; type="application/json"`,
+        `<${BASE_URL}/>; rel="service-doc"; type="text/html"`,
+        `<${BASE_URL}/llms.txt>; rel="describedby"; type="text/plain"`,
+        `<${BASE_URL}/.well-known/mcp.json>; rel="mcp-server"; type="application/json"`,
+      ].join(", "),
+    );
+  }
+  return payload;
+});
+
+// Correct media types for the agent-facing well-known documents.
+app.addHook("onSend", async (req, reply, payload) => {
+  if (req.url === "/.well-known/api-catalog") reply.header("content-type", "application/linkset+json");
+  if (req.url.endsWith("SKILL.md") || req.url === "/auth.md") reply.header("content-type", "text/markdown; charset=utf-8");
+  return payload;
 });
 
 // Consolidate SEO signal on one hostname once a custom domain exists.
@@ -229,14 +253,33 @@ renders a month. Nothing else to set up: keep sending the same key.</p>
 <p><a href="/" style="color:#3ce0a5">Back to MintPDF</a></p></div></body>`),
 );
 
-app.get("/guides", async (_req, reply) =>
-  reply.type("text/html; charset=utf-8").send(renderIndex(BASE_URL)),
-);
+function wantsMarkdown(req: { headers: Record<string, unknown> }): boolean {
+  return /text\/markdown/i.test(String(req.headers.accept ?? ""));
+}
+
+app.get("/guides", async (req, reply) => {
+  if (wantsMarkdown(req)) {
+    const body = getPosts()
+      .map((p) => `## ${p.title}\n${p.description}\n${BASE_URL}/guides/${p.slug}\n`)
+      .join("\n");
+    return reply
+      .type("text/markdown; charset=utf-8")
+      .header("vary", "Accept")
+      .send(`# MintPDF guides\n\n${body}`);
+  }
+  return reply.type("text/html; charset=utf-8").header("vary", "Accept").send(renderIndex(BASE_URL));
+});
 
 app.get<{ Params: { slug: string } }>("/guides/:slug", async (req, reply) => {
   const post = getPost(req.params.slug);
   if (!post) return reply.code(404).type("text/html").send("<h1>404</h1><p><a href='/guides'>All guides</a></p>");
-  return reply.type("text/html; charset=utf-8").send(renderPost(post, BASE_URL));
+  if (wantsMarkdown(req)) {
+    return reply
+      .type("text/markdown; charset=utf-8")
+      .header("vary", "Accept")
+      .send(getPostSource(post.slug) ?? `# ${post.title}\n\n${post.description}`);
+  }
+  return reply.type("text/html; charset=utf-8").header("vary", "Accept").send(renderPost(post, BASE_URL));
 });
 
 app.get("/sitemap.xml", async (_req, reply) =>
@@ -260,6 +303,15 @@ app.post("/internal/indexnow", async (req, reply) => {
 });
 
 /** Machine-readable API description, for agents and for the "is it agent ready" checks. */
+app.get("/", async (req, reply, ) => {
+  if (!wantsMarkdown(req)) return reply.callNotFound();
+  const { readFileSync } = await import("node:fs");
+  const { join, dirname } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const file = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "llms.txt");
+  return reply.type("text/markdown; charset=utf-8").header("vary", "Accept").send(readFileSync(file, "utf8"));
+});
+
 app.get("/openapi.json", async (_req, reply) =>
   reply.type("application/json").send({
     openapi: "3.1.0",
@@ -325,7 +377,7 @@ app.get("/openapi.json", async (_req, reply) =>
 
 app.get("/robots.txt", async (_req, reply) =>
   reply.type("text/plain").send(
-    `User-agent: *\nAllow: /\n\n` +
+    `User-agent: *\nContent-Signal: ai-train=yes, search=yes, ai-input=yes\nAllow: /\n\n` +
       `# Machine-readable descriptions\n` +
       `# ${BASE_URL}/llms.txt\n# ${BASE_URL}/openapi.json\n# ${BASE_URL}/.well-known/mcp.json\n\n` +
       `Sitemap: ${BASE_URL}/sitemap.xml\n`,
