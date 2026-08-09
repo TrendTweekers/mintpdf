@@ -136,7 +136,7 @@
     <span class="tag">01 · PURPOSE</span>
     <h1 class="sans">Markdown in. <em>Finished document out.</em></h1>
     <p class="sub sans">A PDF API for developers and AI agents. No template editor, no template IDs,
-    no dashboard. One POST request or one MCP tool call; Markdown ships with a stylesheet that makes
+    no dashboard. One POST request, or one MCP tool call. Markdown comes with a stylesheet that makes
     agent-written documents look right by default.</p>
     <div class="foot">
       <table class="spec">
@@ -149,7 +149,7 @@
 
   <div class="cell c5">
     <span class="tag">02 · OUTPUT</span>
-    <div class="srcline mono"><span class="dim">input:</span> <span id="rot" class="rot">Markdown</span></div>
+    <div class="srcline mono"><span class="dim">markdown in →</span> <span id="rot" class="rot">invoice</span></div>
     <div class="srcbox mono"><pre id="src"># Invoice #42
 
 | Item   | Price  |
@@ -194,13 +194,14 @@
 
   <div class="cell c4" id="keys">
     <span class="tag">05 · FREE KEY</span>
-    <div class="big">3<small> /day anonymous, no signup at all</small></div>
-    <div class="big">100<small> /month with a free key</small></div>
+    <div class="big">100<small> renders/month, free</small></div>
+    <p class="sub sans" style="margin:6px 0 0;font-size:.8rem">One email, one key, no card. Or try
+    3 renders a day with no signup at all.</p>
     <form id="keyform" class="keyform" autocomplete="off">
       <input id="email" type="email" required placeholder="you@example.com" aria-label="Your email">
       <button type="submit">GET KEY</button>
     </form>
-    <div id="keyout" class="keyout">No card. One email, one key, instantly.</div>
+    <div id="keyout" class="keyout">Your key appears here, instantly.</div>
     <div class="foot">
       <div class="rule"></div>
 <pre><span class="cm"># or from the terminal</span>
@@ -225,9 +226,9 @@
     <span class="tag">07 · PRICE</span>
     <div class="big sans">Free<small> · 100 renders/month</small></div>
     <ul class="flat sans">
-      <li>Everything works on the free key</li>
-      <li>3/day with no signup at all</li>
-      <li>REST + MCP included</li>
+      <li>REST API and MCP server, both included</li>
+      <li>Every option: sizes, margins, headers, your own CSS</li>
+      <li>No card, no seats, no sales calls</li>
     </ul>
     <div class="tierline"></div>
     <div class="big sans">$19<small> /month · Solo · 2,000 renders/month</small></div>
@@ -291,20 +292,20 @@
   });
   // Hero demo: cycle the three inputs the API actually accepts, and show each one's document.
   var MODES = [
-    { word: 'Markdown',
+    { word: 'invoice',
       src: '# Invoice #42\n\n| Item   | Price  |\n|--------|--------|\n| Widget | $9.00  |',
       status: 'rendered · 0.9s · A4',
       doc: '<h4>Invoice #42</h4><table><tr><th>Item</th><th>Price</th></tr>' +
            '<tr><td>Widget</td><td>$9.00</td></tr><tr><td>Gadget</td><td>$24.00</td></tr></table>' +
            '<div class="pf"><span>Generated with MintPDF</span><span>1 / 1</span></div>' },
-    { word: 'HTML',
-      src: '<h1>Receipt</h1>\n<p>Paid 9 Aug 2026</p>\n<style>h1{font:600 22px Georgia}</style>',
-      status: 'rendered · 1.1s · A4 · your CSS',
+    { word: 'receipt',
+      src: '# Receipt\n\n**Paid** 9 Aug 2026\n\n| Item   | Price  |\n|--------|--------|',
+      status: 'rendered · 1.1s · A4',
       doc: '<h4>Receipt</h4><table><tr><th>Item</th><th>Price</th></tr>' +
            '<tr><td>Widget</td><td>$9.00</td></tr><tr><td>Paid 9 Aug 2026</td><td>$33.00</td></tr></table>' +
            '<div class="pf"><span>Generated with MintPDF</span><span>1 / 1</span></div>' },
-    { word: 'A web page',
-      src: '{\n  "url": "https://example.com/q3",\n  "format": "A4",\n  "pageNumbers": true\n}',
+    { word: 'report',
+      src: '# Q3 Report\n\nRevenue grew **12%**.\n\n| Metric | Value |\n|--------|-------|',
       status: 'rendered · 1.4s · A4 · 3 pages',
       doc: '<h4>Q3 Report</h4><table><tr><th>Metric</th><th>Value</th></tr>' +
            '<tr><td>Revenue</td><td>+12%</td></tr><tr><td>Churn</td><td>2.1%</td></tr></table>' +
