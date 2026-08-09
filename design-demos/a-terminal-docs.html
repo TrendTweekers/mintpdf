@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDFMint — HTML & Markdown to PDF API</title>
+<style>
+  :root { --bg:#0c110f; --side:#0a0e0c; --line:#1f2d27; --ink:#e9f1ed; --mut:#8ea69c;
+          --acc:#3ce0a5; --acc-ink:#052b1e; --code:#090d0b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); line-height:1.65;
+         font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; font-size:15px; }
+  a { color:var(--acc); text-decoration:none; }
+  code, pre, .mono { font-family:"SF Mono",ui-monospace,Consolas,Menlo,monospace; }
+
+  .shell { display:grid; grid-template-columns:250px 1fr; min-height:100vh; }
+  aside { background:var(--side); border-right:1px solid var(--line); padding:26px 0; position:sticky;
+          top:0; height:100vh; overflow-y:auto; }
+  .logo { padding:0 24px 20px; font-weight:700; font-size:1.05rem; }
+  .logo b { color:var(--acc); }
+  .side-h { padding:16px 24px 6px; color:var(--mut); font-size:.72rem; letter-spacing:.12em;
+            text-transform:uppercase; }
+  aside a.item { display:block; padding:6px 24px; color:var(--mut); font-size:.9rem; border-left:2px solid transparent; }
+  aside a.item:hover, aside a.item.on { color:var(--ink); border-left-color:var(--acc); }
+  .side-cta { margin:22px 20px 0; }
+  .btn { display:inline-block; padding:9px 16px; border-radius:8px; font-weight:600; font-size:.88rem; }
+  .btn-solid { background:var(--acc); color:var(--acc-ink); }
+
+  main { padding:44px 56px 80px; max-width:860px; }
+  .crumb { color:var(--mut); font-size:.8rem; margin-bottom:10px; }
+  h1 { font-size:1.9rem; margin:0 0 10px; letter-spacing:-.4px; }
+  .lead { color:var(--mut); max-width:600px; margin:0 0 26px; }
+  h2 { font-size:1.2rem; margin:44px 0 10px; padding-top:20px; border-top:1px solid var(--line); }
+  p { max-width:640px; }
+  .muted { color:var(--mut); }
+
+  .term { background:var(--code); border:1px solid var(--line); border-radius:10px; margin:18px 0;
+          font-size:.84rem; line-height:1.6; }
+  .term-bar { padding:8px 14px; border-bottom:1px solid var(--line); color:var(--mut); font-size:.75rem; }
+  .term pre { margin:0; padding:16px 18px; overflow-x:auto; }
+  .p1 { color:#cfe4db; } .cm { color:#547065; } .kk { color:var(--acc); } .ss { color:#9ecbff; }
+  .out { color:#8ea69c; }
+  .ok { color:var(--acc); }
+
+  table { border-collapse:collapse; width:100%; font-size:.88rem; margin:14px 0; }
+  th, td { border-bottom:1px solid var(--line); padding:10px 12px 10px 0; text-align:left; vertical-align:top; }
+  th { color:var(--mut); font-weight:600; font-size:.8rem; }
+  td code { color:var(--acc); font-size:.82rem; }
+
+  .note { border:1px solid var(--line); border-left:3px solid var(--acc); border-radius:8px;
+          padding:14px 18px; color:var(--mut); font-size:.92rem; margin:18px 0; max-width:640px; }
+  .note strong { color:var(--ink); }
+  @media (max-width:760px){ .shell { grid-template-columns:1fr; } aside { position:static; height:auto; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <div class="logo">PDF<b>Mint</b></div>
+    <div class="side-h">Start</div>
+    <a class="item on" href="#quickstart">Quickstart</a>
+    <a class="item" href="#mcp">Use from Claude (MCP)</a>
+    <a class="item" href="#keys">API keys &amp; limits</a>
+    <div class="side-h">Reference</div>
+    <a class="item" href="#pdf">POST /v1/pdf</a>
+    <a class="item" href="#options">Options</a>
+    <a class="item" href="#pricing">Pricing</a>
+    <div class="side-cta"><a class="btn btn-solid" href="#keys">Get a free key</a></div>
+  </aside>
+  <main>
+    <div class="crumb">Docs / Quickstart</div>
+    <h1>Markdown in, finished PDF out.</h1>
+    <p class="lead">PDFMint is a PDF API for developers and AI agents. No template editor, no
+    template IDs, no dashboard. This page is the entire product: read it top to bottom in four
+    minutes and you know everything.</p>
+
+    <div class="term">
+      <div class="term-bar">terminal — your first PDF, no signup</div>
+<pre><span class="cm"># 1. render markdown to a PDF</span>
+<span class="p1"><span class="kk">$ curl</span> -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
+    -H <span class="ss">"Content-Type: application/json"</span> \
+    -d <span class="ss">'{"markdown":"# Invoice #42\n\nThanks for your business.","pageNumbers":true}'</span> \
+    --output invoice.pdf</span>
+
+<span class="cm"># 2. that's it</span>
+<span class="kk">$ open</span> <span class="p1">invoice.pdf</span>
+<span class="out">→ 1 page · A4 · table styles, code blocks and headers already look right</span> <span class="ok">✓</span></pre>
+    </div>
+
+    <h2 id="mcp">Use it from Claude</h2>
+    <p class="muted">One block in your MCP config. Then ask for a PDF in plain language; the agent
+    writes the Markdown and calls the tool.</p>
+    <div class="term">
+      <div class="term-bar">claude_desktop_config.json</div>
+<pre><span class="p1">{
+  <span class="ss">"mcpServers"</span>: {
+    <span class="ss">"pdfmint"</span>: {
+      <span class="ss">"command"</span>: <span class="ss">"npx"</span>,
+      <span class="ss">"args"</span>: [<span class="ss">"-y"</span>, <span class="ss">"mcp-remote"</span>, <span class="ss">"https://pdfmint-production-0b25.up.railway.app/mcp"</span>]
+    }
+  }
+}</span></pre>
+    </div>
+    <p class="muted">Tools exposed: <code>generate_pdf</code> (HTML or Markdown → download URL,
+    valid 1 hour) and <code>pdf_from_url</code> (public web page → PDF).</p>
+
+    <h2 id="keys">API keys &amp; limits</h2>
+    <div class="term"><div class="term-bar">terminal</div>
+<pre><span class="kk">$ curl</span><span class="p1"> -X POST …/v1/keys -d <span class="ss">'{"email":"you@example.com"}'</span></span>
+<span class="out">{"key":"pm_…","daily_limit":100}</span></pre></div>
+    <table>
+      <tr><th>Tier</th><th>Limit</th><th>Cost</th></tr>
+      <tr><td>Anonymous</td><td>5 renders/day per IP</td><td>Free, no signup</td></tr>
+      <tr><td>Free key</td><td>100 renders/day</td><td>Free, email only, no card</td></tr>
+      <tr><td>Solo (planned)</td><td>higher volume</td><td>~$19/mo · beta users grandfathered</td></tr>
+    </table>
+
+    <h2 id="pdf">POST /v1/pdf</h2>
+    <p class="muted">Body takes exactly one source plus options. Returns PDF bytes, or JSON with a
+    download link when <code>"output":"url"</code>.</p>
+    <table>
+      <tr><th>Field</th><th>Meaning</th></tr>
+      <tr><td><code>html</code></td><td>Full HTML document or fragment</td></tr>
+      <tr><td><code>markdown</code></td><td>Markdown, rendered with a clean default stylesheet</td></tr>
+      <tr><td><code>url</code></td><td>Public http(s) page to render (private addresses blocked)</td></tr>
+    </table>
+
+    <h2 id="options">Options</h2>
+    <table>
+      <tr><th>Option</th><th>Values</th></tr>
+      <tr><td><code>format</code></td><td>A4 (default), Letter, Legal, A3, A5</td></tr>
+      <tr><td><code>landscape</code></td><td>true / false</td></tr>
+      <tr><td><code>margin</code></td><td>e.g. "18mm", all sides</td></tr>
+      <tr><td><code>headerText</code> / <code>footerText</code></td><td>small print on every page</td></tr>
+      <tr><td><code>pageNumbers</code></td><td>true → "3 / 7" in the footer</td></tr>
+    </table>
+
+    <div class="note"><strong>Why not self-host Gotenberg?</strong> You can; it's excellent and
+    free. PDFMint is for when you need a PDF now, without deploying anything, and want Markdown to
+    come out looking good by default. We run the browsers, you send content.</div>
+
+    <h2 id="pricing">Pricing</h2>
+    <p class="muted">Free while in beta. A free tier will stay free. Planned paid tier around
+    $19/month for volume. No per-seat pricing, no sales calls.</p>
+  </main>
+</div>
+</body>
+</html>
