@@ -180,11 +180,14 @@
 
   <div class="cell c5">
     <span class="tag">04 · MCP</span>
-<pre><span class="s">"mintpdf"</span>: {
+<pre><span class="cm"># one line in your MCP config</span>
+<span class="s">"mintpdf"</span>: {
   <span class="s">"command"</span>: <span class="s">"npx"</span>,
-  <span class="s">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"mcp-remote"</span>,
-    <span class="s">"https://pdfmint-production-0b25.up.railway.app/mcp"</span>]
-}</pre>
+  <span class="s">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"mintpdf-mcp"</span>]
+}
+
+<span class="cm"># or point straight at the hosted endpoint with mcp-remote:</span>
+<span class="cm"># …railway.app/mcp</span></pre>
     <table class="spec foot">
       <tr><td>tools</td><td>generate_pdf · pdf_from_url</td></tr>
       <tr><td>transport</td><td>streamable HTTP, stateless</td></tr>

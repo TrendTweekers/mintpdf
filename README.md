@@ -54,6 +54,19 @@ Then send `Authorization: Bearer pm_…` with your requests.
   "mcpServers": {
     "mintpdf": {
       "command": "npx",
+      "args": ["-y", "mintpdf-mcp"]
+    }
+  }
+}
+```
+
+Prefer the hosted endpoint directly? Use `mcp-remote` instead:
+
+```json
+{
+  "mcpServers": {
+    "mintpdf": {
+      "command": "npx",
       "args": ["-y", "mcp-remote", "https://pdfmint-production-0b25.up.railway.app/mcp"]
     }
   }
