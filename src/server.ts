@@ -9,7 +9,8 @@ import {
 } from "./store.js";
 import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, PolarEvent } from "./polar.js";
 import { handleMcpRequest } from "./mcp.js";
-import { getPost, getPosts, getPostSource, renderIndex, renderPost, renderSitemap } from "./blog.js";
+import { getPost, getPosts, getPostSource, renderIndex, renderPost, renderSitemap, STYLE, MARK, FAVICON } from "./blog.js";
+import { renderTool } from "./tool.js";
 import { notify, notifyOnce, notifyEnabled, escapeHtml, locate, firstToday } from "./notify.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -297,6 +298,10 @@ app.get<{ Params: { slug: string } }>("/guides/:slug", async (req, reply) => {
   }
   return reply.type("text/html; charset=utf-8").header("vary", "Accept").send(renderPost(post, BASE_URL));
 });
+
+app.get("/markdown-to-pdf", async (_req, reply) =>
+  reply.type("text/html; charset=utf-8").send(renderTool(BASE_URL, MARK, FAVICON, STYLE)),
+);
 
 app.get("/sitemap.xml", async (_req, reply) =>
   reply.type("application/xml").send(renderSitemap(BASE_URL)),

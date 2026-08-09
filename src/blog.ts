@@ -67,7 +67,7 @@ export function getPost(slug: string): Post | undefined {
   return getPosts().find((p) => p.slug === slug);
 }
 
-const STYLE = `
+export const STYLE = `
   :root { --bg:#0a0e0c; --cell:#0e1412; --line:#233830; --ink:#e9f1ed; --mut:#7f978c;
           --acc:#3ce0a5; --acc-ink:#052b1e; }
   *{box-sizing:border-box}
@@ -129,12 +129,12 @@ const STYLE = `
   @media (max-width:640px){ .head .what{display:none} }
 `;
 
-const MARK = `<svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true">
+export const MARK = `<svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true">
   <path d="M18 43V13" stroke="#e9f1ed" stroke-width="3" stroke-linecap="round"/>
   <path d="M18 19C18 11 25 6 35 6c0 9-7 14-17 13z" fill="#3ce0a5"/>
   <path d="M18 32c0-7 6-11 14-11 0 8-6 12-14 11z" fill="#3ce0a5" opacity=".5"/></svg>`;
 
-const FAVICON =
+export const FAVICON =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%233ce0a5'/%3E%3Cpath d='M19 40V16' stroke='%23052b1e' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M19 21c0-7 6-11 14-11 0 8-6 12-14 11z' fill='%23052b1e'/%3E%3Cpath d='M19 33c0-6 5-9 11-9 0 7-4 10-11 9z' fill='%23052b1e' opacity='.55'/%3E%3C/svg%3E";
 
 function esc(s: string): string {
@@ -160,6 +160,7 @@ function shell(opts: { title: string; description: string; canonical: string; bo
     <span class="what">HTML &amp; Markdown → PDF API · MCP native</span>
     <span class="nav">
       <a href="/">API</a>
+      <a href="/markdown-to-pdf">Free converter</a>
       <a href="/guides">Guides</a>
       <a class="cta" href="/#keys">GET A FREE KEY</a>
     </span>
@@ -213,7 +214,7 @@ or add it to your MCP client with <code>npx -y mintpdf-mcp</code>. <a href="/">F
 }
 
 export function renderSitemap(baseUrl: string): string {
-  const urls = ["", "/guides", ...getPosts().map((p) => `/guides/${p.slug}`)];
+  const urls = ["", "/markdown-to-pdf", "/guides", ...getPosts().map((p) => `/guides/${p.slug}`)];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((u) => `  <url><loc>${baseUrl}${u}</loc></url>`).join("\n")}
