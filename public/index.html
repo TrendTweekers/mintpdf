@@ -6,73 +6,247 @@
 <title>PDFMint — HTML & Markdown to PDF API built for AI agents</title>
 <meta name="description" content="One POST request or one MCP tool call: HTML or Markdown in, clean PDF out. No template editor, no dashboard. Free tier, transparent pricing.">
 <style>
-  :root { --ink:#16211c; --mut:#5c6b63; --bg:#fbfdfc; --card:#f0f5f2; --line:#dbe5df; --acc:#0d7a4f; }
+  :root {
+    --bg:#0c110f; --panel:#121917; --line:#20302a; --line2:#2a3d35;
+    --ink:#e9f1ed; --mut:#8ea69c; --acc:#3ce0a5; --acc-dim:#1d8f68; --acc-ink:#052b1e;
+    --code:#0a0f0d; --paper:#fdfdfa; --paper-ink:#1d2320; --radius:12px;
+  }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-         color:var(--ink); background:var(--bg); line-height:1.6; }
-  main { max-width:760px; margin:0 auto; padding:48px 20px 80px; }
-  h1 { font-size:2rem; line-height:1.2; margin:0 0 .5em; }
-  h2 { font-size:1.25rem; margin-top:2.2em; }
-  p.lead { font-size:1.1rem; color:var(--mut); }
-  pre { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px;
-        overflow-x:auto; font-size:.85rem; line-height:1.5; }
-  code { font-family:"SF Mono",Consolas,Menlo,monospace; }
-  .pill { display:inline-block; background:var(--card); border:1px solid var(--line); border-radius:999px;
-          padding:2px 12px; font-size:.8rem; color:var(--mut); margin-bottom:18px; }
-  table { border-collapse:collapse; width:100%; font-size:.9rem; }
-  th,td { border:1px solid var(--line); padding:8px 12px; text-align:left; }
-  th { background:var(--card); }
-  a { color:var(--acc); }
-  footer { color:var(--mut); font-size:.85rem; margin-top:60px; border-top:1px solid var(--line); padding-top:20px; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink); line-height:1.6;
+         font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
+  a { color:var(--acc); text-decoration:none; }
+  code, pre, .mono { font-family:"SF Mono",ui-monospace,Consolas,Menlo,monospace; }
+  h1,h2,h3,p { text-wrap:pretty; }
+  .wrap { max-width:1060px; margin:0 auto; padding:0 24px; }
+
+  nav { position:sticky; top:0; background:rgba(12,17,15,.88); backdrop-filter:blur(10px);
+        border-bottom:1px solid var(--line); z-index:10; }
+  nav .wrap { display:flex; align-items:center; gap:26px; height:58px; }
+  .logo { font-weight:700; font-size:1.02rem; letter-spacing:.2px; color:var(--ink); }
+  .logo b { color:var(--acc); font-weight:700; }
+  nav a.link { color:var(--mut); font-size:.9rem; }
+  nav a.link:hover { color:var(--ink); }
+  nav .cta { margin-left:auto; }
+
+  .btn { display:inline-block; padding:11px 20px; border-radius:9px; font-weight:600; font-size:.94rem; }
+  .btn-solid { background:var(--acc); color:var(--acc-ink); }
+  .btn-solid:hover { filter:brightness(1.08); }
+  .btn-ghost { border:1px solid var(--line2); color:var(--ink); }
+  .btn-ghost:hover { border-color:var(--acc); }
+
+  header { padding:72px 0 30px; }
+  .hero { display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center; }
+  .pill { display:inline-block; border:1px solid var(--line2); background:var(--panel);
+          border-radius:999px; padding:4px 14px; font-size:.78rem; color:var(--acc); margin-bottom:20px; }
+  h1 { font-size:clamp(1.9rem, 4.4vw, 2.9rem); line-height:1.1; margin:0 0 16px; letter-spacing:-.6px; }
+  h1 em { color:var(--acc); font-style:normal; }
+  .lead { font-size:1.08rem; color:var(--mut); margin:0 0 26px; }
+  .hero-ctas { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .hero-note { color:var(--mut); font-size:.83rem; }
+
+  /* The transformation: markdown in → paper out. The one visual only a PDF product can claim. */
+  .demo { position:relative; }
+  .demo .src { background:var(--code); border:1px solid var(--line); border-radius:10px;
+               padding:14px 16px; font-size:.78rem; line-height:1.6; color:#bcd6cb;
+               width:78%; position:relative; z-index:1; }
+  .demo .src .cmt { color:#547065; }
+  .demo .src .k { color:var(--acc); }
+  .demo .arrow { position:absolute; left:24%; top:78%; z-index:3; color:var(--acc);
+                 font-size:1.2rem; background:var(--bg); border:1px solid var(--line2);
+                 border-radius:50%; width:40px; height:40px; display:flex; align-items:center;
+                 justify-content:center; box-shadow:0 4px 24px rgba(0,0,0,.5); }
+  .paper { background:var(--paper); color:var(--paper-ink); width:66%; margin:-34px 0 0 auto;
+           position:relative; z-index:2; border-radius:4px; padding:26px 28px 18px;
+           box-shadow:0 18px 50px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.4);
+           font-family:Iowan Old Style, Palatino, Georgia, serif; }
+  .paper h4 { margin:0 0 4px; font-size:1.05rem; border-bottom:1px solid #d8d8d0; padding-bottom:6px; }
+  .paper p { margin:8px 0; font-size:.8rem; line-height:1.5; }
+  .paper table { width:100%; border-collapse:collapse; font-size:.75rem; margin:10px 0 14px; }
+  .paper th, .paper td { border:1px solid #ccccc2; padding:4px 8px; text-align:left; }
+  .paper th { background:#f1f1ea; }
+  .paper .pfoot { display:flex; justify-content:space-between; color:#9a9a90; font-size:.62rem;
+                  border-top:1px solid #e2e2da; padding-top:8px; margin-top:14px;
+                  font-family:-apple-system,"Segoe UI",Roboto,sans-serif; }
+
+  section { padding:58px 0 6px; }
+  h2 { font-size:1.5rem; margin:0 0 8px; letter-spacing:-.3px; }
+  .sub { color:var(--mut); margin:0 0 26px; max-width:620px; }
+
+  .window { background:var(--code); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .window-bar { display:flex; align-items:center; gap:8px; padding:9px 14px;
+                background:var(--panel); border-bottom:1px solid var(--line); }
+  .dot { width:9px; height:9px; border-radius:50%; background:#2c3f38; }
+  .window-title { color:var(--mut); font-size:.78rem; margin-left:8px; }
+  .window pre { margin:0; padding:17px 20px; overflow-x:auto; font-size:.85rem; line-height:1.55; color:#cfe4db; }
+  .tok-k { color:var(--acc); } .tok-s { color:#9ecbff; } .tok-c { color:#547065; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px 22px; }
+  .card h3 { margin:0 0 6px; font-size:1rem; }
+  .card p { margin:0; color:var(--mut); font-size:.9rem; }
+
+  table.api { border-collapse:separate; border-spacing:0; width:100%; font-size:.9rem;
+              background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  table.api th, table.api td { border-bottom:1px solid var(--line); padding:13px 16px; text-align:left; vertical-align:top; }
+  table.api th { color:var(--mut); font-weight:600; font-size:.82rem; }
+  table.api td code { color:var(--acc); font-size:.84rem; white-space:nowrap; }
+  table.api tr:last-child td { border-bottom:none; }
+  .tbl-scroll { overflow-x:auto; }
+
+  .price-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:14px; }
+  .price { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:24px 26px; }
+  .price.hot { border-color:var(--acc-dim); }
+  .price .tier { color:var(--mut); font-size:.85rem; }
+  .price .amount { font-size:1.9rem; font-weight:700; margin:4px 0 0; }
+  .price .per { color:var(--mut); font-size:.82rem; margin-bottom:12px; }
+  .price ul { margin:12px 0 0; padding-left:18px; color:var(--mut); font-size:.9rem; }
+  .price li { margin-bottom:5px; }
+
+  .honest { background:var(--code); border:1px solid var(--line); border-left:3px solid var(--acc-dim);
+            border-radius:var(--radius); padding:20px 24px; color:var(--mut); font-size:.95rem; }
+  .honest strong { color:var(--ink); }
+
+  footer { margin-top:72px; border-top:1px solid var(--line); padding:26px 0 40px;
+           color:var(--mut); font-size:.84rem; }
+
+  @media (max-width:820px){
+    .hero { grid-template-columns:1fr; gap:34px; }
+    .demo .src { width:88%; }
+    .paper { width:80%; margin-top:-26px; }
+    nav .link { display:none; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <span class="pill">free beta · no signup needed to try</span>
-  <h1>HTML &amp; Markdown to PDF, built for AI&nbsp;agents</h1>
-  <p class="lead">One POST request or one MCP tool call. No template editor, no template IDs, no dashboard.
-  Send HTML or Markdown, get a clean PDF back. Markdown ships with a good default stylesheet, so
-  agent-generated documents look right without any design work.</p>
 
-  <h2>Try it now (no key needed)</h2>
-<pre><code>curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
-  -H "Content-Type: application/json" \
-  -d '{"markdown":"# Invoice #42\n\nThanks for your business.","footerText":"Generated by PDFMint","pageNumbers":true}' \
-  --output invoice.pdf</code></pre>
-  <p>Anonymous requests: 5/day. Free key: 100/day — <code>POST /v1/keys {"email":"you@example.com"}</code>.</p>
+<nav><div class="wrap">
+  <div class="logo">PDF<b>Mint</b></div>
+  <a class="link" href="#try">Try it</a>
+  <a class="link" href="#mcp">MCP</a>
+  <a class="link" href="#api">API</a>
+  <a class="link" href="#pricing">Pricing</a>
+  <a class="btn btn-solid cta" href="#key">Get a free key</a>
+</div></nav>
 
-  <h2>Use it from Claude or any MCP client</h2>
-<pre><code>{
-  "mcpServers": {
-    "pdfmint": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://pdfmint-production-0b25.up.railway.app/mcp"]
+<header><div class="wrap">
+  <div class="hero">
+    <div>
+      <span class="pill">Free beta · no signup needed to try</span>
+      <h1>Markdown in.<br><em>Finished document out.</em></h1>
+      <p class="lead">A PDF API built for developers and AI agents. One POST request or one MCP tool
+      call. No template editor, no template IDs, no dashboard. Markdown ships with a clean default
+      stylesheet, so agent-written documents come out looking right.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-solid" href="#try">Try it in 10 seconds</a>
+        <a class="btn btn-ghost" href="#mcp">Add to Claude</a>
+      </div>
+      <p class="hero-note">No card. Anonymous trial 5 renders/day · free key 100/day.</p>
+    </div>
+    <div class="demo" aria-hidden="true">
+      <div class="src mono"><span class="cmt"># what your agent sends</span><br>
+<span class="k">​# Invoice #42</span><br><br>
+Thanks for your business.<br><br>
+| Item&nbsp;&nbsp;&nbsp; | Price |<br>
+|--------|-------|<br>
+| Widget | $9.00 |<br>
+| Gadget | $24.00 |</div>
+      <div class="arrow">→</div>
+      <div class="paper">
+        <h4>Invoice #42</h4>
+        <p>Thanks for your business.</p>
+        <table><tr><th>Item</th><th>Price</th></tr>
+        <tr><td>Widget</td><td>$9.00</td></tr>
+        <tr><td>Gadget</td><td>$24.00</td></tr></table>
+        <div class="pfoot"><span>Generated with PDFMint</span><span>1 / 1</span></div>
+      </div>
+    </div>
+  </div>
+</div></header>
+
+<section><div class="wrap">
+  <div class="grid">
+    <div class="card"><h3>No templates, no dashboard</h3>
+      <p>Your code or your agent already produces the content. Send it as HTML or Markdown and skip the template-editor step entirely.</p></div>
+    <div class="card"><h3>Made for MCP</h3>
+      <p><code>generate_pdf</code> and <code>pdf_from_url</code> over streamable HTTP. Claude and any MCP client can render documents mid-conversation.</p></div>
+    <div class="card"><h3>Real document options</h3>
+      <p>Page numbers, headers, footers, margins, paper sizes, landscape. Chromium rendering, so your CSS just works.</p></div>
+  </div>
+</div></section>
+
+<section id="try"><div class="wrap">
+  <h2>Try it now</h2>
+  <p class="sub">Copy, paste, done. The anonymous tier needs no key at all.</p>
+  <div class="window">
+    <div class="window-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="window-title">terminal</span></div>
+<pre><span class="tok-k">curl</span> -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
+  -H <span class="tok-s">"Content-Type: application/json"</span> \
+  -d <span class="tok-s">'{"markdown":"# Hello\n\n| item | price |\n|---|---|\n| Widget | $9 |","footerText":"Generated with PDFMint","pageNumbers":true}'</span> \
+  --output hello.pdf</pre>
+  </div>
+  <p id="key" class="sub" style="margin-top:16px">Need more than 5/day? Free key, no card:
+  <code>curl -X POST …/v1/keys -d '{"email":"you@example.com"}'</code> → send it as
+  <code>Authorization: Bearer pm_…</code></p>
+</div></section>
+
+<section id="mcp"><div class="wrap">
+  <h2>Use it from Claude</h2>
+  <p class="sub">Add one block to your MCP config, then ask for a PDF in plain language. The agent
+  writes the Markdown, calls the tool, and hands you a download link.</p>
+  <div class="window">
+    <div class="window-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="window-title">claude_desktop_config.json</span></div>
+<pre>{
+  <span class="tok-s">"mcpServers"</span>: {
+    <span class="tok-s">"pdfmint"</span>: {
+      <span class="tok-s">"command"</span>: <span class="tok-s">"npx"</span>,
+      <span class="tok-s">"args"</span>: [<span class="tok-s">"-y"</span>, <span class="tok-s">"mcp-remote"</span>, <span class="tok-s">"https://pdfmint-production-0b25.up.railway.app/mcp"</span>]
     }
   }
-}</code></pre>
-  <p>Two tools: <code>generate_pdf</code> (HTML or Markdown in, download URL out) and
-  <code>pdf_from_url</code> (public web page in, PDF out). Download URLs are valid for one hour.</p>
+}</pre>
+  </div>
+</div></section>
 
+<section id="api"><div class="wrap">
   <h2>API</h2>
-  <table>
+  <p class="sub">Three endpoints. That's the whole surface.</p>
+  <div class="tbl-scroll"><table class="api">
     <tr><th>Endpoint</th><th>What it does</th></tr>
-    <tr><td><code>POST /v1/pdf</code></td><td>Body: one of <code>html</code>, <code>markdown</code>, <code>url</code> + options
+    <tr><td><code>POST /v1/pdf</code></td><td>Body: one of <code>html</code>, <code>markdown</code>, <code>url</code>, plus options
       (<code>format</code>, <code>landscape</code>, <code>margin</code>, <code>headerText</code>, <code>footerText</code>,
-      <code>pageNumbers</code>). Returns the PDF, or JSON with a link when <code>"output":"url"</code>.</td></tr>
+      <code>pageNumbers</code>). Returns PDF bytes, or a JSON download link with <code>"output":"url"</code>.</td></tr>
     <tr><td><code>POST /v1/keys</code></td><td>Free API key by email. No card, no verification loop.</td></tr>
     <tr><td><code>POST /mcp</code></td><td>MCP endpoint (streamable HTTP), same capabilities as the REST API.</td></tr>
-  </table>
+  </table></div>
+</div></section>
 
-  <h2>Why not just self-host Gotenberg?</h2>
-  <p>You can, and if you want to run and patch your own Chromium fleet, you should. PDFMint is for
-  the other case: you (or your agent) need a PDF <em>now</em>, without deploying anything, and you
-  want Markdown to come out looking good by default. We run the browsers, you send content.</p>
+<section><div class="wrap">
+  <div class="honest"><strong>Why not just self-host Gotenberg?</strong> You can, and if you want to
+  run and patch your own Chromium fleet, you should; it's excellent and free. PDFMint is for the
+  other case: you or your agent need a PDF <em>now</em>, without deploying anything, and you want
+  Markdown to come out looking good by default. We run the browsers, you send content.</div>
+</div></section>
 
+<section id="pricing"><div class="wrap">
   <h2>Pricing</h2>
-  <p>Free while in beta. Planned: a free tier that stays free, and a paid tier around $19/month when
-  volume limits arrive. No per-seat pricing, no sales calls, cancel anytime.</p>
+  <p class="sub">No per-seat pricing, no sales calls, cancel anytime.</p>
+  <div class="price-grid">
+    <div class="price hot">
+      <div class="tier">Beta</div><div class="amount">Free</div><div class="per">while in beta</div>
+      <ul><li>100 renders/day with a free key</li><li>5/day anonymous, no signup</li>
+      <li>REST + MCP included</li></ul>
+    </div>
+    <div class="price">
+      <div class="tier">Solo</div><div class="amount">~$19</div><div class="per">per month · planned</div>
+      <ul><li>Higher volume limits</li><li>A free tier will stay free</li>
+      <li>Beta users get grandfathered pricing</li></ul>
+    </div>
+  </div>
+</div></section>
 
-  <footer>PDFMint · free beta · feedback welcome at the key-signup email address</footer>
-</main>
+<footer><div class="wrap">PDFMint · free beta · feedback welcome at the key-signup email address</div></footer>
+
 </body>
 </html>
