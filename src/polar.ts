@@ -24,7 +24,16 @@ export async function createCheckout(opts: {
     }),
   });
   if (!res.ok) {
-    throw new Error(`polar checkout failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+    // Surface Polar's own validation message (e.g. an unroutable email domain) instead of a blank failure.
+    let reason = `${res.status}`;
+    try {
+      const body = (await res.json()) as { detail?: Array<{ msg?: string }> | string };
+      if (typeof body.detail === "string") reason = body.detail;
+      else if (Array.isArray(body.detail) && body.detail[0]?.msg) reason = body.detail[0].msg as string;
+    } catch {
+      // non-JSON error body; keep the status code
+    }
+    throw Object.assign(new Error(reason), { userFacing: true });
   }
   const data = (await res.json()) as { url?: string };
   if (!data.url) throw new Error("polar checkout returned no url");

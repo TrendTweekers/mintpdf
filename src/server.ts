@@ -151,7 +151,8 @@ app.post<{ Body: { key?: string } }>("/v1/upgrade", async (req, reply) => {
     return reply.send({ checkout_url: url });
   } catch (err) {
     req.log.error(err);
-    return reply.code(502).send({ error: "could not start checkout" });
+    const e = err as Error & { userFacing?: boolean };
+    return reply.code(502).send({ error: e.userFacing ? e.message : "could not start checkout" });
   }
 });
 
