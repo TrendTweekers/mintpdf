@@ -259,8 +259,77 @@ app.post("/internal/indexnow", async (req, reply) => {
   return reply.send({ submitted: urlList.length, status: res.status });
 });
 
+/** Machine-readable API description, for agents and for the "is it agent ready" checks. */
+app.get("/openapi.json", async (_req, reply) =>
+  reply.type("application/json").send({
+    openapi: "3.1.0",
+    info: {
+      title: "MintPDF",
+      version: "0.1.1",
+      description: "Turn HTML or Markdown into a styled PDF, or render a public URL to PDF.",
+      license: { name: "MIT", url: "https://github.com/TrendTweekers/mintpdf/blob/main/LICENSE" },
+    },
+    servers: [{ url: BASE_URL }],
+    paths: {
+      "/v1/pdf": {
+        post: {
+          summary: "Render a PDF",
+          description: "Send exactly one of html, markdown or url. Returns PDF bytes, or JSON with a download link when output is \"url\".",
+          security: [{}, { bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    html: { type: "string", description: "HTML document or fragment" },
+                    markdown: { type: "string", description: "Markdown, styled with a clean default stylesheet" },
+                    url: { type: "string", format: "uri", description: "Public page to render" },
+                    format: { type: "string", enum: ["A4", "Letter", "Legal", "A3", "A5"], default: "A4" },
+                    landscape: { type: "boolean", default: false },
+                    margin: { type: "string", example: "18mm" },
+                    headerText: { type: "string" },
+                    footerText: { type: "string" },
+                    pageNumbers: { type: "boolean" },
+                    output: { type: "string", enum: ["pdf", "url"], default: "pdf" },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: "PDF bytes, or a JSON download link" },
+            400: { description: "Invalid request" },
+            429: { description: "Quota exhausted" },
+          },
+        },
+      },
+      "/v1/keys": {
+        post: {
+          summary: "Get a free API key",
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: { type: "object", required: ["email"], properties: { email: { type: "string", format: "email" } } } } },
+          },
+          responses: { 200: { description: "The key and its monthly limit" } },
+        },
+      },
+      "/mcp": {
+        post: { summary: "MCP endpoint (streamable HTTP)", description: "Tools: generate_pdf, pdf_from_url", responses: { 200: { description: "JSON-RPC response" } } },
+      },
+    },
+    components: { securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", description: "Your API key" } } },
+  }),
+);
+
 app.get("/robots.txt", async (_req, reply) =>
-  reply.type("text/plain").send(`User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`),
+  reply.type("text/plain").send(
+    `User-agent: *\nAllow: /\n\n` +
+      `# Machine-readable descriptions\n` +
+      `# ${BASE_URL}/llms.txt\n# ${BASE_URL}/openapi.json\n# ${BASE_URL}/.well-known/mcp.json\n\n` +
+      `Sitemap: ${BASE_URL}/sitemap.xml\n`,
+  ),
 );
 
 app.get("/health", async () => ({ ok: true }));

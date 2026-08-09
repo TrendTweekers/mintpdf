@@ -1,0 +1,14 @@
+{
+  "serverInfo": { "name": "MintPDF", "version": "0.1.1" },
+  "description": "Turn HTML or Markdown into a clean, styled PDF, or render a public URL to PDF. Returns a download link valid for one hour.",
+  "url": "https://mintpdf.dev/mcp",
+  "transport": { "type": "streamable-http" },
+  "capabilities": { "tools": true },
+  "tools": [
+    { "name": "generate_pdf", "description": "Render HTML or Markdown to a PDF and return a download URL." },
+    { "name": "pdf_from_url", "description": "Render a public web page to a PDF and return a download URL." }
+  ],
+  "packages": [{ "registry": "npm", "identifier": "mintpdf-mcp", "transport": "stdio" }],
+  "documentation": "https://mintpdf.dev",
+  "repository": "https://github.com/TrendTweekers/mintpdf"
+}

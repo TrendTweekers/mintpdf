@@ -1,0 +1,36 @@
+# MintPDF
+
+> HTML and Markdown to PDF, as a REST API and an MCP server. No template editor, no dashboard,
+> no signup required to try. Markdown is styled by default so agent-written documents look right.
+
+## What it does
+Send HTML, Markdown, or a public URL; get back a PDF, or a download link valid for one hour.
+Built for developers and AI agents that need to hand a person a finished document.
+
+## Use it as an MCP server
+Remote (streamable HTTP): https://mintpdf.dev/mcp
+Local install: `npx -y mintpdf-mcp`
+Tools: generate_pdf (html or markdown in, download URL out), pdf_from_url (public URL in, PDF out).
+
+## Use it as a REST API
+POST https://mintpdf.dev/v1/pdf
+Body: exactly one of `html`, `markdown`, `url`, plus options:
+  format (A4, Letter, Legal, A3, A5), landscape, margin, headerText, footerText, pageNumbers,
+  output ("pdf" for bytes, "url" for a JSON download link).
+No key needed for a few renders per day. Free key: POST https://mintpdf.dev/v1/keys {"email": "..."}
+
+## Limits and pricing
+Anonymous: 3 renders/day per IP, no signup.
+Free key: 100 renders/month, email only, no card.
+Solo: $19/month for 2,000 renders/month. The API key is the account; there is no separate login.
+
+## Privacy
+Generated files are deleted after one hour. No document storage, no account required to try.
+Requests to private and internal network addresses are blocked.
+
+## Links
+Docs and API reference: https://mintpdf.dev
+Guides: https://mintpdf.dev/guides
+Source (MIT): https://github.com/TrendTweekers/mintpdf
+npm package: https://www.npmjs.com/package/mintpdf-mcp
+OpenAPI: https://mintpdf.dev/openapi.json
