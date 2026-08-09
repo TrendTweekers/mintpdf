@@ -1,12 +1,15 @@
 {
   "name": "mintpdf-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server that turns HTML or Markdown into a styled PDF, or renders a public URL to PDF.",
   "type": "module",
   "bin": {
     "mintpdf-mcp": "index.js"
   },
-  "files": ["index.js", "README.md"],
+  "files": [
+    "index.js",
+    "README.md"
+  ],
   "engines": {
     "node": ">=18"
   },
@@ -31,5 +34,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "zod": "^3.24.0"
-  }
+  },
+  "mcpName": "io.github.TrendTweekers/mintpdf"
 }
