@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PDFMint — HTML & Markdown to PDF API for AI agents</title>
+<title>MintPDF — HTML & Markdown to PDF API for AI agents</title>
 <meta name="description" content="Markdown in, finished PDF out. One POST request or one MCP tool call. No template editor, no dashboard. Free tier, MCP native.">
-<meta property="og:title" content="PDFMint — HTML & Markdown to PDF API for AI agents">
+<meta property="og:title" content="MintPDF — HTML & Markdown to PDF API for AI agents">
 <meta property="og:description" content="Markdown in, finished PDF out. One POST request or one MCP tool call. No template editor.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0e0c'/%3E%3Crect x='8' y='6' width='16' height='20' rx='2' fill='%23fdfdf8'/%3E%3Crect x='11' y='11' width='10' height='2' fill='%233ce0a5'/%3E%3Crect x='11' y='16' width='10' height='1.5' fill='%23555'/%3E%3Crect x='11' y='20' width='7' height='1.5' fill='%23555'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%233ce0a5'/%3E%3Cpath d='M19 40V16' stroke='%23052b1e' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M19 21c0-7 6-11 14-11 0 8-6 12-14 11z' fill='%23052b1e'/%3E%3Cpath d='M19 33c0-6 5-9 11-9 0 7-4 10-11 9z' fill='%23052b1e' opacity='.55'/%3E%3C/svg%3E">
 <style>
   :root { --bg:#0a0e0c; --cell:#0e1412; --line:#233830; --ink:#e9f1ed; --mut:#7f978c;
           --acc:#3ce0a5; --acc-ink:#052b1e; }
@@ -26,9 +26,9 @@
   .c12{grid-column:span 12} .c8{grid-column:span 8} .c6{grid-column:span 6}
   .c4{grid-column:span 4} .c5{grid-column:span 5} .c7{grid-column:span 7}
 
-  .head { display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; padding:6px 2px 2px; }
+  .head { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:6px 2px 2px; }
+  .head .brand { display:flex; align-items:center; gap:10px; }
   .head .name { font-size:1.5rem; font-weight:700; letter-spacing:-.02em; }
-  .head .name b { color:var(--acc); }
   .head .what { color:var(--mut); }
   .head .cta { margin-left:auto; background:var(--acc); color:var(--acc-ink); padding:9px 16px;
                border-radius:7px; font-weight:700; }
@@ -70,7 +70,14 @@
 
 <div class="board">
   <div class="cell c12 head">
-    <span class="name">PDF<b>Mint</b></span>
+    <span class="brand">
+      <svg width="30" height="30" viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M18 43V13" stroke="#e9f1ed" stroke-width="3" stroke-linecap="round"/>
+        <path d="M18 19C18 11 25 6 35 6c0 9-7 14-17 13z" fill="#3ce0a5"/>
+        <path d="M18 32c0-7 6-11 14-11 0 8-6 12-14 11z" fill="#3ce0a5" opacity=".5"/>
+      </svg>
+      <span class="name">MintPDF</span>
+    </span>
     <span class="what sans">HTML &amp; Markdown → PDF API · MCP native · free beta</span>
     <a class="cta sans" href="#keys">GET FREE KEY</a>
   </div>
@@ -89,7 +96,7 @@
       <h4>Invoice #42</h4>
       <table><tr><th>Item</th><th>Price</th></tr>
       <tr><td>Widget</td><td>$9.00</td></tr><tr><td>Gadget</td><td>$24.00</td></tr></table>
-      <div class="pf"><span>Generated with PDFMint</span><span>1 / 1</span></div>
+      <div class="pf"><span>Generated with MintPDF</span><span>1 / 1</span></div>
     </div>
   </div>
 
@@ -104,7 +111,7 @@
 
   <div class="cell c5">
     <span class="tag">04 · MCP</span>
-<pre><span class="s">"pdfmint"</span>: {
+<pre><span class="s">"mintpdf"</span>: {
   <span class="s">"command"</span>: <span class="s">"npx"</span>,
   <span class="s">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"mcp-remote"</span>,
     <span class="s">"https://pdfmint-production-0b25.up.railway.app/mcp"</span>]

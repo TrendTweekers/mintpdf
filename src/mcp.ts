@@ -43,7 +43,7 @@ function pdfResult(pdf: Buffer, baseUrl: string) {
 }
 
 export function buildMcpServer(baseUrl: string): McpServer {
-  const server = new McpServer({ name: "pdfmint", version: "0.1.0" });
+  const server = new McpServer({ name: "mintpdf", version: "0.1.0" });
 
   server.registerTool(
     "generate_pdf",

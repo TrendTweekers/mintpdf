@@ -44,7 +44,7 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
     return reply.code(429).send({
       error: "daily limit reached",
       hint: quota.keyed
-        ? "Keyed limit reached; contact us to raise it while PDFMint is in beta."
+        ? "Keyed limit reached; contact us to raise it while MintPDF is in beta."
         : `Anonymous trial is ${LIMITS.anonymousPerDay}/day. POST /v1/keys {\"email\":\"you@example.com\"} for a free key (${LIMITS.keyedPerDay}/day).`,
     });
   }

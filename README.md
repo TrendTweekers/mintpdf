@@ -1,4 +1,4 @@
-# PDFMint
+# MintPDF
 
 HTML & Markdown → PDF API with a native MCP server, built for AI agents and developers who don't
 want a template editor.

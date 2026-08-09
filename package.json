@@ -1,8 +1,8 @@
 {
-  "name": "pdfmint",
+  "name": "mintpdf",
   "version": "0.1.0",
   "private": true,
-  "description": "HTML/Markdown to PDF API with a native MCP server for AI agents",
+  "description": "HTML and Markdown to PDF API with a native MCP server for AI agents",
   "type": "module",
   "scripts": {
     "build": "tsc",
