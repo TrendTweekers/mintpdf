@@ -10,6 +10,7 @@ import {
 import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, PolarEvent } from "./polar.js";
 import { handleMcpRequest } from "./mcp.js";
 import { getPost, renderIndex, renderPost, renderSitemap } from "./blog.js";
+import { notify, notifyOnce, notifyEnabled, escapeHtml } from "./notify.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
 const BASE_URL = process.env.BASE_URL ?? `http://localhost:${PORT}`;
@@ -45,6 +46,23 @@ app.addHook("onRequest", async (req, reply) => {
   }
 });
 
+// One ping per visitor per day, on page views only. Referrer is the useful part.
+app.addHook("onResponse", async (req, reply) => {
+  if (!notifyEnabled || req.method !== "GET" || reply.statusCode !== 200) return;
+  const path = req.url.split("?")[0];
+  const isPage = path === "/" || path === "/guides" || path.startsWith("/guides/");
+  if (!isPage) return;
+  const ref = String(req.headers.referer ?? "");
+  const ua = String(req.headers["user-agent"] ?? "");
+  if (/bot|crawler|spider|preview|monitor|curl|headless/i.test(ua)) return;
+  notifyOnce(
+    `visit:${req.ip}`,
+    `👀 <b>Visitor</b>\n${escapeHtml(path)}` +
+      (ref ? `\nfrom: ${escapeHtml(ref)}` : "\nfrom: direct") +
+      `\n<code>${escapeHtml(req.ip)}</code>`,
+  );
+});
+
 interface PdfBody extends PdfOptions {
   html?: string;
   markdown?: string;
@@ -68,6 +86,10 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
   const quota = rateLimit(req);
   reply.header("x-ratelimit-remaining", String(Math.max(quota.remaining, 0)));
   if (!quota.ok) {
+    notifyOnce(
+      `limit:${quota.keyed ? String(req.headers.authorization).slice(-8) : req.ip}`,
+      `🚦 <b>Limit reached</b>\n${quota.keyed ? "a keyed user" : "an anonymous visitor"} hit the cap`,
+    );
     return reply.code(429).send({
       error: "daily limit reached",
       hint: quota.keyed
@@ -92,6 +114,13 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
     return reply.code(e.statusCode ?? 500).send({ error: e.message });
   }
 
+  const source = body.html ? "html" : body.markdown ? "markdown" : "url";
+  notifyOnce(
+    `render:${quota.keyed ? "key" : "ip"}:${quota.keyed ? String(req.headers.authorization).slice(-8) : req.ip}`,
+    `📄 <b>PDF rendered</b>\nsource: ${source} · ${quota.keyed ? "keyed" : "anonymous"}\n` +
+      `size: ${Math.round(pdf.length / 1024)} KB`,
+  );
+
   if (body.output === "url") {
     const { id, expiresAt } = storePdf(pdf);
     return reply.send({ download_url: `${BASE_URL}/f/${id}`, expires_at: expiresAt, size_bytes: pdf.length });
@@ -107,6 +136,7 @@ app.post<{ Body: { email?: string } }>("/v1/keys", async (req, reply) => {
   const ipQuota = consumeQuota(`keygen:${req.ip}`, 3);
   if (ipQuota < 0) return reply.code(429).send({ error: "too many keys requested today" });
   const key = createKey(email);
+  notify(`🔑 <b>New free key</b>\n${escapeHtml(email)}`);
   return reply.send({ key, daily_limit: LIMITS.free });
 });
 
@@ -148,6 +178,7 @@ app.post<{ Body: { key?: string } }>("/v1/upgrade", async (req, reply) => {
       email: record.email,
       successUrl: `${BASE_URL}/upgrade/done`,
     });
+    notify(`💳 <b>Checkout started</b>\n${escapeHtml(record.email)} · $19/mo`);
     return reply.send({ checkout_url: url });
   } catch (err) {
     req.log.error(err);
@@ -179,9 +210,11 @@ app.post("/webhooks/polar", async (req, reply) => {
   if (evt.type === "order.paid" || evt.type === "subscription.active") {
     setTier(target.key, "solo", { customerId: evt.data.customer?.id ?? evt.data.customer_id, subscriptionId: subId });
     req.log.info({ type: evt.type }, "upgraded key to solo");
+    notify(`💰 <b>PAID — Solo</b>\n${escapeHtml(target.email)}\n$19/month`);
   } else if (evt.type === "subscription.canceled" || evt.type === "subscription.revoked") {
     setTier(target.key, "free");
     req.log.info({ type: evt.type }, "downgraded key to free");
+    notify(`⬇️ <b>Subscription ended</b>\n${escapeHtml(target.email)}`);
   }
   return reply.send({ ok: true, matched: true });
 });

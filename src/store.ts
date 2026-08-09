@@ -109,6 +109,11 @@ export function consumeQuota(bucket: string, limit: number, period: "day" | "mon
   return limit - used - 1;
 }
 
+/** True the first time it is called with this key today; false afterwards. */
+export function onceToday(key: string): boolean {
+  return consumeQuota(`once:${key}`, 1) >= 0;
+}
+
 const FILE_TTL_MS = 60 * 60 * 1000;
 
 export function storePdf(pdf: Buffer): { id: string; expiresAt: string } {
