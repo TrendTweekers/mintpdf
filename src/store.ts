@@ -3,11 +3,11 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, unlinkSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const DATA_DIR = process.env.DATA_DIR ?? "/tmp/pdfmint";
+const DATA_DIR = process.env.DATA_DIR ?? "/tmp/mintpdf";
 const FILES_DIR = join(DATA_DIR, "files");
 mkdirSync(FILES_DIR, { recursive: true });
 
-const db = new DatabaseSync(join(DATA_DIR, "pdfmint.db"));
+const db = new DatabaseSync(join(DATA_DIR, "mintpdf.db"));
 db.exec(`
   CREATE TABLE IF NOT EXISTS api_keys (
     key TEXT PRIMARY KEY,
@@ -22,19 +22,76 @@ db.exec(`
   );
 `);
 
+/** Additive migrations; safe to run on an existing database. */
+for (const col of [
+  "tier TEXT NOT NULL DEFAULT 'free'",
+  "polar_customer_id TEXT",
+  "polar_subscription_id TEXT",
+]) {
+  try {
+    db.exec(`ALTER TABLE api_keys ADD COLUMN ${col}`);
+  } catch {
+    // column already present
+  }
+}
+
+export type Tier = "free" | "solo";
+
 export const LIMITS = {
   anonymousPerDay: Number(process.env.ANON_DAILY_LIMIT ?? 5),
-  keyedPerDay: Number(process.env.KEY_DAILY_LIMIT ?? 100),
+  free: Number(process.env.KEY_DAILY_LIMIT ?? 100),
+  solo: Number(process.env.SOLO_DAILY_LIMIT ?? 2000),
 };
+
+export function dailyLimitFor(tier: Tier): number {
+  return tier === "solo" ? LIMITS.solo : LIMITS.free;
+}
 
 export function createKey(email: string): string {
   const key = "pm_" + randomBytes(24).toString("base64url");
-  db.prepare("INSERT INTO api_keys (key, email, created_at) VALUES (?, ?, ?)").run(key, email, Date.now());
+  db.prepare("INSERT INTO api_keys (key, email, created_at, tier) VALUES (?, ?, ?, 'free')").run(
+    key,
+    email,
+    Date.now(),
+  );
   return key;
 }
 
-export function keyExists(key: string): boolean {
-  return db.prepare("SELECT 1 FROM api_keys WHERE key = ?").get(key) !== undefined;
+export interface KeyRecord {
+  key: string;
+  email: string;
+  tier: Tier;
+}
+
+export function getKey(key: string): KeyRecord | undefined {
+  const row = db.prepare("SELECT key, email, tier FROM api_keys WHERE key = ?").get(key) as
+    | { key: string; email: string; tier: string }
+    | undefined;
+  return row ? { key: row.key, email: row.email, tier: (row.tier as Tier) ?? "free" } : undefined;
+}
+
+export function findKeyByEmail(email: string): KeyRecord | undefined {
+  const row = db
+    .prepare("SELECT key, email, tier FROM api_keys WHERE email = ? ORDER BY created_at DESC LIMIT 1")
+    .get(email.trim().toLowerCase()) as { key: string; email: string; tier: string } | undefined;
+  return row ? { key: row.key, email: row.email, tier: (row.tier as Tier) ?? "free" } : undefined;
+}
+
+export function findKeyBySubscription(subscriptionId: string): KeyRecord | undefined {
+  const row = db
+    .prepare("SELECT key, email, tier FROM api_keys WHERE polar_subscription_id = ?")
+    .get(subscriptionId) as { key: string; email: string; tier: string } | undefined;
+  return row ? { key: row.key, email: row.email, tier: (row.tier as Tier) ?? "free" } : undefined;
+}
+
+export function setTier(
+  key: string,
+  tier: Tier,
+  polar?: { customerId?: string; subscriptionId?: string },
+): void {
+  db.prepare(
+    "UPDATE api_keys SET tier = ?, polar_customer_id = COALESCE(?, polar_customer_id), polar_subscription_id = COALESCE(?, polar_subscription_id) WHERE key = ?",
+  ).run(tier, polar?.customerId ?? null, polar?.subscriptionId ?? null, key);
 }
 
 /** Returns remaining quota for today after consuming one unit, or -1 if exhausted. */
@@ -75,7 +132,7 @@ export function cleanupExpiredFiles(): void {
     try {
       if (statSync(p).mtimeMs < cutoff) unlinkSync(p);
     } catch {
-      // file already gone; ignore
+      // already gone
     }
   }
 }

@@ -3,7 +3,11 @@ import fastifyStatic from "@fastify/static";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { htmlToPdf, markdownToPdf, urlToPdf, closeBrowser, PdfOptions } from "./pdf.js";
-import { LIMITS, consumeQuota, createKey, keyExists, readPdf, storePdf } from "./store.js";
+import {
+  LIMITS, consumeQuota, createKey, getKey, findKeyByEmail, findKeyBySubscription,
+  setTier, dailyLimitFor, readPdf, storePdf,
+} from "./store.js";
+import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, PolarEvent } from "./polar.js";
 import { handleMcpRequest } from "./mcp.js";
 import { getPost, renderIndex, renderPost, renderSitemap } from "./blog.js";
 
@@ -16,6 +20,16 @@ const app = Fastify({
   logger: true,
   bodyLimit: 5 * 1024 * 1024,
   trustProxy: true,
+});
+
+// Keep the raw JSON around: webhook signatures are computed over the exact bytes sent.
+app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, done) => {
+  (req as unknown as { rawBody?: string }).rawBody = body as string;
+  try {
+    done(null, body === "" ? {} : JSON.parse(body as string));
+  } catch (err) {
+    done(err as Error, undefined);
+  }
 });
 
 await app.register(fastifyStatic, {
@@ -40,9 +54,10 @@ interface PdfBody extends PdfOptions {
 
 function rateLimit(req: { headers: Record<string, unknown>; ip: string }): { ok: boolean; remaining: number; keyed: boolean } {
   const auth = String(req.headers.authorization ?? "");
-  const key = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-  if (key && keyExists(key)) {
-    const remaining = consumeQuota(`key:${key}`, LIMITS.keyedPerDay);
+  const presented = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  const record = presented ? getKey(presented) : undefined;
+  if (record) {
+    const remaining = consumeQuota(`key:${record.key}`, dailyLimitFor(record.tier));
     return { ok: remaining >= 0, remaining, keyed: true };
   }
   const remaining = consumeQuota(`ip:${req.ip}`, LIMITS.anonymousPerDay);
@@ -56,8 +71,8 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
     return reply.code(429).send({
       error: "daily limit reached",
       hint: quota.keyed
-        ? "Keyed limit reached; contact us to raise it while MintPDF is in beta."
-        : `Anonymous trial is ${LIMITS.anonymousPerDay}/day. POST /v1/keys {\"email\":\"you@example.com\"} for a free key (${LIMITS.keyedPerDay}/day).`,
+        ? "Daily limit reached for this key. Upgrade at /#pricing for a higher limit."
+        : `Anonymous trial is ${LIMITS.anonymousPerDay}/day. POST /v1/keys {\"email\":\"you@example.com\"} for a free key (${LIMITS.free}/day).`,
     });
   }
 
@@ -92,7 +107,7 @@ app.post<{ Body: { email?: string } }>("/v1/keys", async (req, reply) => {
   const ipQuota = consumeQuota(`keygen:${req.ip}`, 3);
   if (ipQuota < 0) return reply.code(429).send({ error: "too many keys requested today" });
   const key = createKey(email);
-  return reply.send({ key, daily_limit: LIMITS.keyedPerDay });
+  return reply.send({ key, daily_limit: LIMITS.free });
 });
 
 app.get<{ Params: { id: string } }>("/f/:id", async (req, reply) => {
@@ -120,6 +135,66 @@ app.post("/mcp", async (req, reply) => {
   await handleMcpRequest(BASE_URL, req.raw, reply.raw, req.body);
 });
 app.get("/mcp", async (_req, reply) => reply.code(405).send({ error: "POST only (stateless transport)" }));
+
+app.post<{ Body: { key?: string } }>("/v1/upgrade", async (req, reply) => {
+  if (!billingEnabled) return reply.code(503).send({ error: "billing not configured yet" });
+  const presented = (req.body?.key ?? "").trim();
+  const record = getKey(presented);
+  if (!record) return reply.code(404).send({ error: "unknown key. Get a free key first, then upgrade it." });
+  if (record.tier === "solo") return reply.send({ already_subscribed: true });
+  try {
+    const url = await createCheckout({
+      apiKey: record.key,
+      email: record.email,
+      successUrl: `${BASE_URL}/upgrade/done`,
+    });
+    return reply.send({ checkout_url: url });
+  } catch (err) {
+    req.log.error(err);
+    return reply.code(502).send({ error: "could not start checkout" });
+  }
+});
+
+app.post("/webhooks/polar", async (req, reply) => {
+  const raw = (req as unknown as { rawBody?: string }).rawBody ?? "";
+  if (!verifyWebhook(raw, req.headers as Record<string, unknown>)) {
+    return reply.code(401).send({ error: "bad signature" });
+  }
+  const evt = req.body as PolarEvent;
+  const keyFromMeta = apiKeyFromEvent(evt);
+  const email = evt.data.customer?.email;
+  const subId = evt.data.subscription_id ?? (evt.type.startsWith("subscription.") ? evt.data.id : undefined);
+
+  const target =
+    (keyFromMeta ? getKey(keyFromMeta) : undefined) ??
+    (subId ? findKeyBySubscription(subId) : undefined) ??
+    (email ? findKeyByEmail(email) : undefined);
+
+  if (!target) {
+    req.log.warn({ type: evt.type }, "polar webhook: no matching api key");
+    return reply.send({ ok: true, matched: false });
+  }
+
+  if (evt.type === "order.paid" || evt.type === "subscription.active") {
+    setTier(target.key, "solo", { customerId: evt.data.customer?.id ?? evt.data.customer_id, subscriptionId: subId });
+    req.log.info({ type: evt.type }, "upgraded key to solo");
+  } else if (evt.type === "subscription.canceled" || evt.type === "subscription.revoked") {
+    setTier(target.key, "free");
+    req.log.info({ type: evt.type }, "downgraded key to free");
+  }
+  return reply.send({ ok: true, matched: true });
+});
+
+app.get("/upgrade/done", async (_req, reply) =>
+  reply.type("text/html; charset=utf-8").send(`<!doctype html><meta charset="utf-8">
+<title>Subscribed — MintPDF</title>
+<body style="background:#0a0e0c;color:#e9f1ed;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">
+<div><h1 style="color:#3ce0a5">You're on Solo.</h1>
+<p style="color:#8ea69c;max-width:44ch;line-height:1.7">Your existing API key now has ${LIMITS.solo}
+renders a day. Nothing else to set up: keep sending the same key.</p>
+<p><a href="/" style="color:#3ce0a5">Back to MintPDF</a></p></div></body>`),
+);
 
 app.get("/guides", async (_req, reply) =>
   reply.type("text/html; charset=utf-8").send(renderIndex(BASE_URL)),

@@ -74,6 +74,7 @@
   .keyout .copy { background:none; border:1px solid var(--line); color:var(--mut); border-radius:5px;
                   padding:2px 7px; font-size:.68rem; cursor:pointer; font-family:inherit; margin-left:6px; }
   .keyout .copy:hover { color:var(--ink); border-color:var(--acc); }
+  .tierline { border-top:1px solid var(--line); margin:18px 0 14px; }
   .big { font-size:1.7rem; font-weight:700; }
   .big small { color:var(--mut); font-size:.75rem; font-weight:400; }
   ul.flat { margin:8px 0 0; padding:0; list-style:none; color:var(--mut); font-size:.8rem; }
@@ -172,15 +173,20 @@
     </table>
   </div>
 
-  <div class="cell c4">
+  <div class="cell c4" id="pricing">
     <span class="tag">07 · PRICE</span>
-    <div class="big sans">Free<small> during beta</small></div>
+    <div class="big sans">Free<small> · 100 renders/day</small></div>
     <ul class="flat sans">
-      <li><b>~$19/mo</b> Solo tier planned</li>
-      <li>free tier stays free</li>
-      <li>beta users grandfathered</li>
-      <li>no seats · no sales calls</li>
+      <li>Everything works on the free key</li>
+      <li>REST + MCP included</li>
     </ul>
+    <div class="tierline"></div>
+    <div class="big sans">$19<small> /month · Solo · 2,000 renders/day</small></div>
+    <form id="upform" class="keyform" autocomplete="off">
+      <input id="upkey" type="text" required placeholder="pm_… your key" aria-label="Your API key">
+      <button type="submit">UPGRADE</button>
+    </form>
+    <div id="upout" class="keyout">Upgrades the key you already have. No seats, no sales calls, cancel anytime.</div>
   </div>
 
   <div class="cell c12">
@@ -231,6 +237,26 @@
       }
     } catch (err) {
       out.textContent = 'Network error. Try again.';
+    }
+  });
+  var up = document.getElementById('upform');
+  var upout = document.getElementById('upout');
+  up.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var key = document.getElementById('upkey').value.trim();
+    upout.textContent = 'opening checkout…';
+    try {
+      var res = await fetch('/v1/upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: key })
+      });
+      var data = await res.json();
+      if (data.checkout_url) { window.location = data.checkout_url; }
+      else if (data.already_subscribed) { upout.textContent = 'This key is already on Solo.'; }
+      else { upout.textContent = data.error || 'Could not start checkout.'; }
+    } catch (err) {
+      upout.textContent = 'Network error. Try again.';
     }
   });
 })();
