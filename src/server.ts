@@ -33,9 +33,25 @@ app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, 
   }
 });
 
+// Markdown representation of the homepage, only when explicitly requested.
+app.addHook("onRequest", async (req, reply) => {
+  if (req.method !== "GET") return;
+  const path = req.url.split("?")[0];
+  if (path !== "/" && path !== "/index.html") return;
+  if (!/text\/markdown/i.test(String(req.headers.accept ?? ""))) return;
+  const { readFileSync } = await import("node:fs");
+  const { join, dirname } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const file = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "llms.txt");
+  return reply
+    .type("text/markdown; charset=utf-8")
+    .header("vary", "Accept")
+    .send(readFileSync(file, "utf8"));
+});
+
 // RFC 8288 Link headers so agents can discover our machine-readable descriptions from any response.
 app.addHook("onSend", async (req, reply, payload) => {
-  if (req.method === "GET" && !req.url.startsWith("/f/")) {
+  if ((req.method === "GET" || req.method === "HEAD") && !req.url.startsWith("/f/")) {
     reply.header(
       "link",
       [
@@ -303,15 +319,6 @@ app.post("/internal/indexnow", async (req, reply) => {
 });
 
 /** Machine-readable API description, for agents and for the "is it agent ready" checks. */
-app.get("/", async (req, reply, ) => {
-  if (!wantsMarkdown(req)) return reply.callNotFound();
-  const { readFileSync } = await import("node:fs");
-  const { join, dirname } = await import("node:path");
-  const { fileURLToPath } = await import("node:url");
-  const file = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "llms.txt");
-  return reply.type("text/markdown; charset=utf-8").header("vary", "Accept").send(readFileSync(file, "utf8"));
-});
-
 app.get("/openapi.json", async (_req, reply) =>
   reply.type("application/json").send({
     openapi: "3.1.0",
