@@ -62,6 +62,21 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
              min-height:340px; display:flex; align-items:center; justify-content:center;
              color:#8a8a80; font-size:.85rem; overflow:hidden; }
   .preview iframe { width:100%; height:100%; min-height:340px; border:none; }
+  .keyform { display:flex; margin-top:10px; background:#090d0b; border:1px solid var(--line);
+             border-radius:7px; overflow:hidden; transition:border-color .15s; max-width:420px; }
+  .keyform:focus-within { border-color:var(--acc); }
+  .keyform input { flex:1; min-width:0; background:transparent; border:none; color:var(--ink);
+                   padding:11px 13px; font-size:.82rem; font-family:inherit; }
+  .keyform input::placeholder { color:#4f6a5e; }
+  .keyform input:focus { outline:none; }
+  .keyform button { background:transparent; border:none; border-left:1px solid var(--line);
+                    color:var(--acc); padding:0 18px; font-weight:700; font-size:.72rem;
+                    letter-spacing:.12em; cursor:pointer; font-family:inherit; white-space:nowrap;
+                    transition:background .15s, color .15s; }
+  .keyform button:hover { background:var(--acc); color:var(--acc-ink); }
+  .keyout { margin-top:10px; color:var(--mut); font-size:.78rem; word-break:normal;
+            overflow-wrap:anywhere; }
+  .keyout code { color:var(--acc); }
   .keybox { margin-top:14px; border-top:1px solid var(--line); padding-top:14px; display:none; }
   .keybox.show { display:block; }
   @media (max-width:900px){ .tool { grid-template-columns:1fr; } }
@@ -71,7 +86,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
     <a class="brand" href="/">${mark}MintPDF</a>
     <span class="what">HTML &amp; Markdown → PDF API · MCP native</span>
     <span class="nav">
-      <a href="/">API</a><a href="/guides">Guides</a>
+      <a href="/">API</a><a href="/markdown-to-pdf">Free converter</a><a href="/guides">Guides</a>
       <a class="cta" href="/#keys">GET A FREE KEY</a>
     </span>
   </div>
