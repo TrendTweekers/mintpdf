@@ -169,9 +169,10 @@ function shell(opts: { title: string; description: string; canonical: string; bo
 </div>
 <script>setTimeout(function(){try{fetch('/v1/beacon',{method:'POST',headers:{'Content-Type':'application/json'},keepalive:true,body:JSON.stringify({path:location.pathname,ref:document.referrer})});}catch(e){}},4000);</script>
 <footer>
-  <span>MintPDF · feedback to the address you get your key with</span>
+  <span>MintPDF · questions or bug reports welcome</span>
   <span class="fnav">
     <a href="/">API</a><a href="/guides">Guides</a><a href="/llms.txt">llms.txt</a>
+    <a href="https://x.com/Peterhallanderr"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-2px"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> @Peterhallanderr</a>
     <a href="https://github.com/TrendTweekers/mintpdf">Source (MIT)</a>
   </span>
 </footer>
