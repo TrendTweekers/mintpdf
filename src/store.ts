@@ -49,36 +49,22 @@ export function dailyLimitFor(tier: Tier): number {
 }
 
 /**
- * Issues a key for an email. If that email already has a paid subscription, the
- * subscription moves to the new key and the old one drops to free, so losing a key
- * never orphans a subscription: ask for another with the same address.
+ * Issues a key for an email address.
+ *
+ * Deliberately does NOT move a paid subscription to the new key. Email addresses are
+ * not verified here, so an automatic transfer would let anyone who knows a customer's
+ * address take over their subscription and demote their key. Paid recovery is handled
+ * out of band until verified email recovery exists.
  */
-export function createKey(email: string): { key: string; tier: Tier; recovered: boolean } {
+export function createKey(email: string): { key: string; tier: Tier; paidKeyExists: boolean } {
   const key = "pm_" + randomBytes(24).toString("base64url");
   const previous = findKeyByEmail(email);
-  const carriesSubscription = previous?.tier === "solo";
-
-  db.prepare("INSERT INTO api_keys (key, email, created_at, tier) VALUES (?, ?, ?, ?)").run(
+  db.prepare("INSERT INTO api_keys (key, email, created_at, tier) VALUES (?, ?, ?, 'free')").run(
     key,
     email,
     Date.now(),
-    carriesSubscription ? "solo" : "free",
   );
-
-  if (carriesSubscription && previous) {
-    const row = db
-      .prepare("SELECT polar_customer_id, polar_subscription_id FROM api_keys WHERE key = ?")
-      .get(previous.key) as { polar_customer_id?: string; polar_subscription_id?: string } | undefined;
-    db.prepare(
-      "UPDATE api_keys SET polar_customer_id = ?, polar_subscription_id = ? WHERE key = ?",
-    ).run(row?.polar_customer_id ?? null, row?.polar_subscription_id ?? null, key);
-    // The old key must stop billing-by-proxy, and must no longer answer webhook lookups.
-    db.prepare(
-      "UPDATE api_keys SET tier = 'free', polar_subscription_id = NULL WHERE key = ?",
-    ).run(previous.key);
-  }
-
-  return { key, tier: carriesSubscription ? "solo" : "free", recovered: carriesSubscription };
+  return { key, tier: "free", paidKeyExists: previous?.tier === "solo" };
 }
 
 export interface KeyRecord {

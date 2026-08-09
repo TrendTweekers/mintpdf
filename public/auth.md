@@ -53,11 +53,13 @@ curl -X POST https://mintpdf.dev/v1/keys \
   -d '{"email":"you@example.com"}'
 ```
 
-If that address has a paid subscription, it moves to the new key automatically and the response says
-so. The previous key drops to the free tier immediately, so a lost or leaked key stops being able to
-spend your quota.
+On the free tier that is all there is to it: the new key works immediately.
+
+If the address has a **paid** subscription, the new key is issued on the free tier and the
+subscription is not moved automatically. Email addresses are not verified at this endpoint, so an
+automatic transfer would let anyone who knows your address take over your plan. Contact us and the
+subscription is moved by hand.
 
 ## Revocation
 
-Keys do not expire. To retire one, request a new key with the same email: the old one is demoted the
-moment the new one is issued.
+Keys do not expire. To retire one, stop using it; contact us if it has leaked and needs disabling.

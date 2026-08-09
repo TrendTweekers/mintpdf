@@ -179,8 +179,9 @@ app.post<{ Body: { email?: string } }>("/v1/keys", async (req, reply) => {
   if (ipQuota < 0) return reply.code(429).send({ error: "too many keys requested today" });
   const issued = createKey(email);
   notify(
-    issued.recovered
-      ? `🔁 <b>Key replaced (paid)</b>\n${escapeHtml(email)}\nsubscription moved to the new key`
+    issued.paidKeyExists
+      ? `⚠️ <b>Paid customer asked for a new key</b>\n${escapeHtml(email)}\n` +
+          `Issued a FREE key. Move the subscription manually once you have confirmed it is them.`
       : `🔑 <b>New free key</b>\n${escapeHtml(email)}`,
   );
   return reply.send({
@@ -188,8 +189,8 @@ app.post<{ Body: { email?: string } }>("/v1/keys", async (req, reply) => {
     tier: issued.tier,
     monthly_limit: dailyLimitFor(issued.tier),
     daily_limit: dailyLimitFor(issued.tier),
-    ...(issued.recovered
-      ? { note: "Your subscription moved to this key. The previous key is now on the free tier." }
+    ...(issued.paidKeyExists
+      ? { note: "This address already has a paid key. For security we cannot move a subscription automatically; contact us and we will move it." }
       : {}),
   });
 });
