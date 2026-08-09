@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.trendtweekers/mintpdf",
+  "description": "Turn HTML or Markdown into a clean PDF. Markdown is styled by default, so agent-written documents look right without design work.",
+  "repository": {
+    "url": "https://github.com/TrendTweekers/mintpdf",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://pdfmint-production-0b25.up.railway.app/mcp"
+    }
+  ]
+}

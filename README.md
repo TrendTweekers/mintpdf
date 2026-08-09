@@ -1,44 +1,138 @@
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/TrendTweekers/mintpdf/main/public/mark.svg" width="64" alt="MintPDF">
+
 # MintPDF
 
-HTML & Markdown → PDF API with a native MCP server, built for AI agents and developers who don't
-want a template editor.
+**HTML &amp; Markdown → PDF, as a REST API and an MCP server.**
 
-Working name; final brand/domain TBD.
+No template editor. No template IDs. No dashboard. No signup to try.
 
-## What it does
+[Try it](#quickstart) · [MCP setup](#use-it-from-claude-or-any-mcp-client) · [API](#api) · [Self-host](#self-host)
 
-- `POST /v1/pdf` — body has exactly one of `html`, `markdown`, `url`, plus options
-  (`format`, `landscape`, `margin`, `headerText`, `footerText`, `pageNumbers`, `output: "url"`).
-  Returns the PDF bytes, or `{download_url, expires_at}` when `output` is `"url"`.
-- `POST /v1/keys` — `{email}` → free API key (rate limits: anonymous 5/day/IP, keyed 100/day).
-- `POST /mcp` — MCP streamable-HTTP endpoint exposing `generate_pdf` and `pdf_from_url`.
-- `GET /f/:id` — download a generated PDF (1-hour TTL).
+</div>
 
-Markdown rendering ships a clean default stylesheet (tables, code blocks, blockquotes) so
-agent-generated documents look right with zero design input.
+---
 
-## Run locally
+Agents write Markdown. People need documents. MintPDF is the missing step: send HTML or Markdown,
+get a clean PDF back, from your code or straight from an AI agent via MCP.
+
+- **MCP native** — `generate_pdf` and `pdf_from_url` over streamable HTTP. Claude can render a
+  document mid-conversation.
+- **Markdown looks right by default** — tables, code blocks, blockquotes and headings come out
+  styled, so agent-written documents don't look like a text file.
+- **No templates** — your code or your agent already produced the content; skip the template step.
+- **Nothing is kept** — generated files auto-delete after one hour, no document storage, no account
+  needed for the free tier.
+
+## Quickstart
+
+No signup, no key:
 
 ```bash
-npm install        # downloads Chromium via puppeteer (~170MB)
-npm run build
-npm start          # http://localhost:3000
-node dist/smoke.js # end-to-end render check
+curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
+  -H "Content-Type: application/json" \
+  -d '{"markdown":"# Invoice #42\n\n| Item | Price |\n|---|---|\n| Widget | $9.00 |","pageNumbers":true}' \
+  --output invoice.pdf
 ```
 
-## Deploy (Railway)
+Want more than 5 renders a day? A free key (email only, no card) raises it to 100:
 
-Deploys from the Dockerfile. Set:
+```bash
+curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+# → {"key":"pm_…","daily_limit":100}
+```
 
-- `BASE_URL` — public URL of the service (used in download links)
-- `DATA_DIR` — optional; attach a volume at `/data` if you want keys/usage to survive restarts
-- `ANON_DAILY_LIMIT`, `KEY_DAILY_LIMIT` — optional overrides
+Then send `Authorization: Bearer pm_…` with your requests.
 
-Chromium runs with `--no-sandbox` inside the container; requests to private/internal addresses are
-blocked at the request-interception layer (SSRF guard in `src/ssrf.ts`).
+## Use it from Claude (or any MCP client)
 
-## Design notes
+```json
+{
+  "mcpServers": {
+    "mintpdf": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://pdfmint-production-0b25.up.railway.app/mcp"]
+    }
+  }
+}
+```
 
-- Node 22.5+ (uses built-in `node:sqlite`; no native deps).
-- One shared Chromium instance, page-per-request; stateless MCP transport per the spec.
-- Generated files live in `DATA_DIR/files` with a 1-hour TTL sweep.
+Restart your client, then just ask:
+
+> "Summarise this thread as a one-page brief with page numbers and give me a PDF."
+
+| Tool | Input | Returns |
+|---|---|---|
+| `generate_pdf` | `html` **or** `markdown`, plus options | download URL, valid 1 hour |
+| `pdf_from_url` | `url` (public http/https), plus options | download URL, valid 1 hour |
+
+## API
+
+### `POST /v1/pdf`
+
+Body takes **exactly one** source, plus options:
+
+| Field | Type | Notes |
+|---|---|---|
+| `html` | string | Full document or fragment |
+| `markdown` | string | Rendered with the default stylesheet |
+| `url` | string | Public page to render. Private/internal addresses are blocked |
+| `format` | string | `A4` (default), `Letter`, `Legal`, `A3`, `A5` |
+| `landscape` | boolean | default `false` |
+| `margin` | string | all sides, e.g. `"18mm"` |
+| `headerText` / `footerText` | string | small text on every page |
+| `pageNumbers` | boolean | adds `3 / 7` to the footer |
+| `output` | `"pdf"` \| `"url"` | default returns PDF bytes; `"url"` returns JSON with a link |
+
+### `POST /v1/keys`
+
+`{"email":"you@example.com"}` → a free key. No card, no verification loop.
+
+### `POST /mcp`
+
+MCP streamable-HTTP endpoint, stateless. Same capabilities as the REST API.
+
+## Limits
+
+| Tier | Limit | Price |
+|---|---|---|
+| Anonymous | 5 renders/day per IP | free, no signup |
+| Free key | 100 renders/day | free, email only |
+| Solo *(planned)* | higher volume | ~$19/month, beta users grandfathered |
+
+## Self-host
+
+MintPDF is MIT-licensed; run your own if you'd rather.
+
+```bash
+npm install
+npm run build
+npm start                # http://localhost:3000
+node dist/smoke.js       # end-to-end render check
+```
+
+Or with Docker (Chromium and fonts included):
+
+```bash
+docker build -t mintpdf .
+docker run -p 3000:3000 -e BASE_URL=http://localhost:3000 mintpdf
+```
+
+Environment: `BASE_URL` (used in download links), `DATA_DIR` (defaults to `/tmp/mintpdf`; mount a
+volume to persist keys), `ANON_DAILY_LIMIT`, `KEY_DAILY_LIMIT`.
+
+If you want a fuller self-hosted PDF toolchain (Office formats, merging, splitting),
+[Gotenberg](https://gotenberg.dev) is excellent and does more than this does.
+
+## How it works
+
+TypeScript, Fastify, Puppeteer driving one shared Chromium (page per request), `node:sqlite` for keys
+and quotas so there are no native dependencies. Requests to private and internal addresses are blocked
+both at URL validation and at Chromium's request layer, so embedded resources can't reach them either.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
