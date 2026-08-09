@@ -70,7 +70,7 @@ control, send `html` instead of `markdown` and your own CSS is used as-is.
 
 - **Hosted, not air-gapped.** If documents cannot leave your network, self-host something instead;
   [Gotenberg](https://gotenberg.dev) is free, MIT-licensed, and excellent for that.
-- **Free tier**: 5 renders/day anonymously, 100/day with a free key (email, no card).
+- **Free tier**: 3 renders/day anonymously, 100/month with a free key (email, no card). Paid Solo is $19/month for 2,000.
 - **Chromium rendering.** Ordinary CSS behaves; advanced paged-media CSS is not its strength.
 - **Nothing is kept.** Download links expire after an hour and the file is deleted. That is good for
   privacy and bad if you wanted permanent URLs.

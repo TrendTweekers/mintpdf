@@ -23,7 +23,7 @@ get a clean PDF back, from your code or straight from an AI agent via MCP.
   styled, so agent-written documents don't look like a text file.
 - **No templates** — your code or your agent already produced the content; skip the template step.
 - **Nothing is kept** — generated files auto-delete after one hour, no document storage, no account
-  needed for the free tier.
+  needed to try it.
 
 ## Quickstart
 
@@ -36,13 +36,13 @@ curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/pdf \
   --output invoice.pdf
 ```
 
-Want more than 5 renders a day? A free key (email only, no card) raises it to 100:
+Want more than 3 renders a day? A free key (email only, no card) raises it to 100 a month:
 
 ```bash
 curl -X POST https://pdfmint-production-0b25.up.railway.app/v1/keys \
   -H "Content-Type: application/json" \
   -d '{"email":"you@example.com"}'
-# → {"key":"pm_…","daily_limit":100}
+# → {"key":"pm_…","daily_limit":100}   # 100 renders per month
 ```
 
 Then send `Authorization: Bearer pm_…` with your requests.
@@ -99,9 +99,9 @@ MCP streamable-HTTP endpoint, stateless. Same capabilities as the REST API.
 
 | Tier | Limit | Price |
 |---|---|---|
-| Anonymous | 5 renders/day per IP | free, no signup |
-| Free key | 100 renders/day | free, email only |
-| Solo *(planned)* | higher volume | ~$19/month, beta users grandfathered |
+| Anonymous | 3 renders/day per IP | free, no signup |
+| Free key | 100 renders/month | free, email only |
+| Solo | 2,000 renders/month | $19/month |
 
 ## Self-host
 
@@ -122,7 +122,7 @@ docker run -p 3000:3000 -e BASE_URL=http://localhost:3000 mintpdf
 ```
 
 Environment: `BASE_URL` (used in download links), `DATA_DIR` (defaults to `/tmp/mintpdf`; mount a
-volume to persist keys), `ANON_DAILY_LIMIT`, `KEY_DAILY_LIMIT`.
+volume to persist keys), `ANON_DAILY_LIMIT`, `FREE_MONTHLY_LIMIT`, `SOLO_MONTHLY_LIMIT`.
 
 If you want a fuller self-hosted PDF toolchain (Office formats, merging, splitting),
 [Gotenberg](https://gotenberg.dev) is excellent and does more than this does.

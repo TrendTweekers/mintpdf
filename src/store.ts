@@ -38,9 +38,10 @@ for (const col of [
 export type Tier = "free" | "solo";
 
 export const LIMITS = {
-  anonymousPerDay: Number(process.env.ANON_DAILY_LIMIT ?? 5),
-  free: Number(process.env.KEY_DAILY_LIMIT ?? 100),
-  solo: Number(process.env.SOLO_DAILY_LIMIT ?? 2000),
+  /** Anonymous is a rate limit (per IP, per day), keyed tiers are monthly quotas. */
+  anonymousPerDay: Number(process.env.ANON_DAILY_LIMIT ?? 3),
+  free: Number(process.env.FREE_MONTHLY_LIMIT ?? 100),
+  solo: Number(process.env.SOLO_MONTHLY_LIMIT ?? 2000),
 };
 
 export function dailyLimitFor(tier: Tier): number {
@@ -94,9 +95,9 @@ export function setTier(
   ).run(tier, polar?.customerId ?? null, polar?.subscriptionId ?? null, key);
 }
 
-/** Returns remaining quota for today after consuming one unit, or -1 if exhausted. */
-export function consumeQuota(bucket: string, limit: number): number {
-  const day = new Date().toISOString().slice(0, 10);
+/** Consumes one unit from a bucket's window. Returns remaining, or -1 if exhausted. */
+export function consumeQuota(bucket: string, limit: number, period: "day" | "month" = "day"): number {
+  const day = new Date().toISOString().slice(0, period === "month" ? 7 : 10);
   const row = db.prepare("SELECT count FROM usage WHERE bucket = ? AND day = ?").get(bucket, day) as
     | { count: number }
     | undefined;

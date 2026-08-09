@@ -60,16 +60,20 @@
   .paper .pf { display:flex; justify-content:space-between; color:#9a9a90; font-size:.58rem;
                border-top:1px solid #e2e2da; padding-top:6px; font-family:ui-monospace,monospace; }
 
-.keyform { display:flex; gap:8px; margin-top:16px; }
-  .keyform input { flex:1; min-width:0; background:#090d0b; border:1px solid var(--line);
-                   color:var(--ink); border-radius:7px; padding:9px 11px; font-size:.82rem;
-                   font-family:inherit; }
-  .keyform input:focus { outline:none; border-color:var(--acc); }
-  .keyform button { background:var(--acc); color:var(--acc-ink); border:none; border-radius:7px;
-                    padding:9px 14px; font-weight:700; font-size:.78rem; letter-spacing:.05em;
-                    cursor:pointer; font-family:inherit; }
-  .keyform button:hover { filter:brightness(1.08); }
-  .keyout { margin-top:11px; color:var(--mut); font-size:.78rem; word-break:break-all; }
+.keyform { display:flex; margin-top:16px; background:#090d0b; border:1px solid var(--line);
+             border-radius:7px; overflow:hidden; transition:border-color .15s; }
+  .keyform:focus-within { border-color:var(--acc); }
+  .keyform input { flex:1; min-width:0; background:transparent; border:none; color:var(--ink);
+                   padding:11px 13px; font-size:.82rem; font-family:inherit; }
+  .keyform input::placeholder { color:#4f6a5e; }
+  .keyform input:focus { outline:none; }
+  .keyform button { background:transparent; border:none; border-left:1px solid var(--line);
+                    color:var(--acc); padding:0 18px; font-weight:700; font-size:.72rem;
+                    letter-spacing:.12em; cursor:pointer; font-family:inherit; white-space:nowrap;
+                    transition:background .15s, color .15s; }
+  .keyform button:hover { background:var(--acc); color:var(--acc-ink); }
+  .keyout { margin-top:11px; color:var(--mut); font-size:.78rem;
+            word-break:normal; overflow-wrap:anywhere; }
   .keyout code { color:var(--acc); }
   .keyout .copy { background:none; border:1px solid var(--line); color:var(--mut); border-radius:5px;
                   padding:2px 7px; font-size:.68rem; cursor:pointer; font-family:inherit; margin-left:6px; }
@@ -152,8 +156,8 @@
 
   <div class="cell c4" id="keys">
     <span class="tag">05 · FREE KEY</span>
-    <div class="big">5<small> /day anonymous, no signup</small></div>
-    <div class="big">100<small> /day with a free key</small></div>
+    <div class="big">3<small> /day anonymous, no signup at all</small></div>
+    <div class="big">100<small> /month with a free key</small></div>
     <form id="keyform" class="keyform" autocomplete="off">
       <input id="email" type="email" required placeholder="you@example.com" aria-label="Your email">
       <button type="submit">GET KEY</button>
@@ -175,14 +179,14 @@
 
   <div class="cell c4" id="pricing">
     <span class="tag">07 · PRICE</span>
-    <div class="big sans">Free<small> · 100 renders/day</small></div>
+    <div class="big sans">Free<small> · 100 renders/month</small></div>
     <ul class="flat sans">
       <li>Everything works on the free key</li>
-      <li>5/day with no signup at all</li>
+      <li>3/day with no signup at all</li>
       <li>REST + MCP included</li>
     </ul>
     <div class="tierline"></div>
-    <div class="big sans">$19<small> /month · Solo · 2,000 renders/day</small></div>
+    <div class="big sans">$19<small> /month · Solo · 2,000 renders/month</small></div>
     <form id="upform" class="keyform" autocomplete="off">
       <input id="upkey" type="text" required placeholder="pm_… your key" aria-label="Your API key">
       <button type="submit">UPGRADE</button>

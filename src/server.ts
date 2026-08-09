@@ -57,7 +57,7 @@ function rateLimit(req: { headers: Record<string, unknown>; ip: string }): { ok:
   const presented = auth.startsWith("Bearer ") ? auth.slice(7) : null;
   const record = presented ? getKey(presented) : undefined;
   if (record) {
-    const remaining = consumeQuota(`key:${record.key}`, dailyLimitFor(record.tier));
+    const remaining = consumeQuota(`key:${record.key}`, dailyLimitFor(record.tier), "month");
     return { ok: remaining >= 0, remaining, keyed: true };
   }
   const remaining = consumeQuota(`ip:${req.ip}`, LIMITS.anonymousPerDay);
@@ -71,8 +71,8 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
     return reply.code(429).send({
       error: "daily limit reached",
       hint: quota.keyed
-        ? "Daily limit reached for this key. Upgrade at /#pricing for a higher limit."
-        : `Anonymous trial is ${LIMITS.anonymousPerDay}/day. POST /v1/keys {\"email\":\"you@example.com\"} for a free key (${LIMITS.free}/day).`,
+        ? "Monthly limit reached for this key. Upgrade at /#pricing for a higher limit."
+        : `Anonymous trial is ${LIMITS.anonymousPerDay}/day. POST /v1/keys {\"email\":\"you@example.com\"} for a free key (${LIMITS.free}/month).`,
     });
   }
 
@@ -193,7 +193,7 @@ app.get("/upgrade/done", async (_req, reply) =>
 display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">
 <div><h1 style="color:#3ce0a5">You're on Solo.</h1>
 <p style="color:#8ea69c;max-width:44ch;line-height:1.7">Your existing API key now has ${LIMITS.solo}
-renders a day. Nothing else to set up: keep sending the same key.</p>
+renders a month. Nothing else to set up: keep sending the same key.</p>
 <p><a href="/" style="color:#3ce0a5">Back to MintPDF</a></p></div></body>`),
 );
 
