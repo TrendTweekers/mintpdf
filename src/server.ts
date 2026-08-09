@@ -243,6 +243,22 @@ app.get("/sitemap.xml", async (_req, reply) =>
   reply.type("application/xml").send(renderSitemap(BASE_URL)),
 );
 
+/** IndexNow: ping search engines directly when pages change. Key file lives in public/. */
+app.post("/internal/indexnow", async (req, reply) => {
+  const auth = String(req.headers.authorization ?? "");
+  if (!process.env.INDEXNOW_KEY || auth !== `Bearer ${process.env.INDEXNOW_KEY}`) {
+    return reply.code(401).send({ error: "unauthorized" });
+  }
+  const host = new URL(BASE_URL).host;
+  const urlList = ["", "/guides", ...getPosts().map((p) => `/guides/${p.slug}`)].map((u) => `${BASE_URL}${u}`);
+  const res = await fetch("https://api.indexnow.org/indexnow", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ host, key: process.env.INDEXNOW_KEY, keyLocation: `${BASE_URL}/${process.env.INDEXNOW_KEY}.txt`, urlList }),
+  });
+  return reply.send({ submitted: urlList.length, status: res.status });
+});
+
 app.get("/robots.txt", async (_req, reply) =>
   reply.type("text/plain").send(`User-agent: *\nAllow: /\n\nSitemap: ${BASE_URL}/sitemap.xml\n`),
 );
