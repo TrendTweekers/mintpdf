@@ -1,9 +1,8 @@
 ---
-title: Headless Chrome splits your PDFs in the wrong places. Here is the CSS that fixes it.
-published: false
-canonical_url: https://mintpdf.dev/guides/chromium-pdf-page-breaks
-description: Chromium's default fragmentation cuts code blocks, tables and headings in half across page boundaries. A short stylesheet fixes almost all of it, and one common rule silently breaks Markdown tables.
-tags: pdf, css, puppeteer, webdev
+slug: chromium-pdf-page-breaks
+title: Headless Chrome splits your PDFs in the wrong places
+description: Chromium's default fragmentation cuts code blocks, tables and headings in half across page boundaries. The CSS that fixes it, what it costs, and one common rule that silently breaks Markdown tables.
+date: 2026-08-09
 ---
 
 If you generate PDFs with headless Chrome, your output probably has a defect you have not looked for.
@@ -156,5 +155,18 @@ looks at a price column and frowns.
 
 ---
 
-*I maintain [MintPDF](https://mintpdf.dev), an API that turns HTML or Markdown into PDFs, which is
-where all of this came from. The stylesheet above is the one it ships.*
+## Try the stylesheet without writing it
+
+Every rule above ships in MintPDF's Markdown renderer, so you can see the behaviour in about ten
+seconds without setting up a browser:
+
+```bash
+curl -X POST https://mintpdf.dev/v1/pdf \
+  -H "Content-Type: application/json" \
+  -d '{"markdown":"# Test\n\n| Item | Price |\n|:-----|------:|\n| Widget | 9.00 |","pageNumbers":true}' \
+  --output test.pdf
+```
+
+No signup for the first few renders a day. The [full API reference](/) covers the options, and the
+renderer is [open source](https://github.com/TrendTweekers/mintpdf) if you would rather read the
+stylesheet in context.

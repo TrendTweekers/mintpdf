@@ -1,9 +1,8 @@
 ---
-title: Your MCP server is invisible. Here are the files agents actually look for.
-published: false
-canonical_url: https://mintpdf.dev/guides/mcp-server-discoverable
-description: Shipping an MCP server is not the same as being discoverable. A walk through the well-known documents, Link headers, content negotiation and WebMCP that agent tooling checks for, and the one I refused to publish.
-tags: mcp, ai, webdev, api
+slug: mcp-server-discoverable
+title: Your MCP server is invisible: the files agents actually look for
+description: Shipping an MCP server is not the same as being discoverable. The well-known documents, Link headers, content negotiation and WebMCP that agent tooling checks for, and the one I refused to publish.
+date: 2026-08-09
 ---
 
 I shipped an MCP server. It was listed in the official registry, published to npm, indexed by a
@@ -212,5 +211,18 @@ the thing it is describing.
 
 ---
 
-*I maintain [MintPDF](https://mintpdf.dev/guides), an HTML and Markdown to PDF API with an MCP server,
-which is what all of these examples come from.*
+## See the files in place
+
+Every document described above is live on this domain, so you can read a working example rather than
+a specification:
+
+[`/.well-known/mcp.json`](/.well-known/mcp.json) ·
+[`/.well-known/api-catalog`](/.well-known/api-catalog) ·
+[`/.well-known/agent-card.json`](/.well-known/agent-card.json) ·
+[`/.well-known/agent-skills/index.json`](/.well-known/agent-skills/index.json) ·
+[`/llms.txt`](/llms.txt) ·
+[`/openapi.json`](/openapi.json) ·
+[`/auth.md`](/auth.md)
+
+The server they describe is [MintPDF](/), and its source is
+[on GitHub](https://github.com/TrendTweekers/mintpdf) under MIT.
