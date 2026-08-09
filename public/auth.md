@@ -42,6 +42,22 @@ Exceeding a limit returns HTTP 429 with a JSON body explaining which limit was r
 `POST /v1/upgrade` with `{"key":"pm_..."}` returns a hosted checkout URL. On payment the same key is
 raised to the higher limit; nothing else changes and no new credential is issued.
 
+## Lost keys
+
+There is no login to recover, so recovery works through the email address instead: request a key
+again with the same address.
+
+```bash
+curl -X POST https://mintpdf.dev/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+```
+
+If that address has a paid subscription, it moves to the new key automatically and the response says
+so. The previous key drops to the free tier immediately, so a lost or leaked key stops being able to
+spend your quota.
+
 ## Revocation
 
-Keys do not expire. To retire one, stop using it and request another.
+Keys do not expire. To retire one, request a new key with the same email: the old one is demoted the
+moment the new one is issued.

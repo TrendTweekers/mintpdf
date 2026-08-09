@@ -177,9 +177,21 @@ app.post<{ Body: { email?: string } }>("/v1/keys", async (req, reply) => {
   }
   const ipQuota = consumeQuota(`keygen:${req.ip}`, 3);
   if (ipQuota < 0) return reply.code(429).send({ error: "too many keys requested today" });
-  const key = createKey(email);
-  notify(`🔑 <b>New free key</b>\n${escapeHtml(email)}`);
-  return reply.send({ key, daily_limit: LIMITS.free });
+  const issued = createKey(email);
+  notify(
+    issued.recovered
+      ? `🔁 <b>Key replaced (paid)</b>\n${escapeHtml(email)}\nsubscription moved to the new key`
+      : `🔑 <b>New free key</b>\n${escapeHtml(email)}`,
+  );
+  return reply.send({
+    key: issued.key,
+    tier: issued.tier,
+    monthly_limit: dailyLimitFor(issued.tier),
+    daily_limit: dailyLimitFor(issued.tier),
+    ...(issued.recovered
+      ? { note: "Your subscription moved to this key. The previous key is now on the free tier." }
+      : {}),
+  });
 });
 
 app.get<{ Params: { id: string } }>("/f/:id", async (req, reply) => {

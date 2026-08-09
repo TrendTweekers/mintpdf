@@ -48,14 +48,37 @@ export function dailyLimitFor(tier: Tier): number {
   return tier === "solo" ? LIMITS.solo : LIMITS.free;
 }
 
-export function createKey(email: string): string {
+/**
+ * Issues a key for an email. If that email already has a paid subscription, the
+ * subscription moves to the new key and the old one drops to free, so losing a key
+ * never orphans a subscription: ask for another with the same address.
+ */
+export function createKey(email: string): { key: string; tier: Tier; recovered: boolean } {
   const key = "pm_" + randomBytes(24).toString("base64url");
-  db.prepare("INSERT INTO api_keys (key, email, created_at, tier) VALUES (?, ?, ?, 'free')").run(
+  const previous = findKeyByEmail(email);
+  const carriesSubscription = previous?.tier === "solo";
+
+  db.prepare("INSERT INTO api_keys (key, email, created_at, tier) VALUES (?, ?, ?, ?)").run(
     key,
     email,
     Date.now(),
+    carriesSubscription ? "solo" : "free",
   );
-  return key;
+
+  if (carriesSubscription && previous) {
+    const row = db
+      .prepare("SELECT polar_customer_id, polar_subscription_id FROM api_keys WHERE key = ?")
+      .get(previous.key) as { polar_customer_id?: string; polar_subscription_id?: string } | undefined;
+    db.prepare(
+      "UPDATE api_keys SET polar_customer_id = ?, polar_subscription_id = ? WHERE key = ?",
+    ).run(row?.polar_customer_id ?? null, row?.polar_subscription_id ?? null, key);
+    // The old key must stop billing-by-proxy, and must no longer answer webhook lookups.
+    db.prepare(
+      "UPDATE api_keys SET tier = 'free', polar_subscription_id = NULL WHERE key = ?",
+    ).run(previous.key);
+  }
+
+  return { key, tier: carriesSubscription ? "solo" : "free", recovered: carriesSubscription };
 }
 
 export interface KeyRecord {
