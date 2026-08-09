@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+*.log
+.chrome/
+chrome/
+chrome-headless-shell/
