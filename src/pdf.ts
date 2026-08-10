@@ -1,6 +1,84 @@
 import puppeteer, { Browser } from "puppeteer";
 import { marked } from "marked";
+import katex from "katex";
+import { createRequire } from "node:module";
+import { readFileSync, existsSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { assertPublicUrl, isPrivateHost } from "./ssrf.js";
+
+const require_ = createRequire(import.meta.url);
+const katexDir = join(dirname(require_.resolve("katex/package.json")), "dist");
+const mermaidJs = join(dirname(require_.resolve("mermaid/package.json")), "dist", "mermaid.min.js");
+
+/**
+ * KaTeX's stylesheet points at ~20 font files with relative URLs. The render target is a
+ * `setContent` page with no base URL and no network access, so those requests would silently fail
+ * and the maths would fall back to whatever serif the container happens to have. Inlining the woff2
+ * files as data URIs (~296KB, only ever attached when a document actually contains maths) keeps the
+ * typography correct and the renderer fully offline.
+ */
+let katexCssCache: string | null = null;
+function katexCss(): string {
+  if (katexCssCache !== null) return katexCssCache;
+  let css = readFileSync(join(katexDir, "katex.min.css"), "utf8");
+  // Remove the woff/ttf fallbacks first, so nothing is left pointing at a URL we did not inline.
+  css = css.replace(/,url\(fonts\/[^)]+\.(?:woff|ttf)\)\s*format\("(?:woff|truetype)"\)/g, "");
+  css = css.replace(/url\(fonts\/([^)]+)\.woff2\)/g, (whole: string, name: string) => {
+    const file = join(katexDir, "fonts", `${name}.woff2`);
+    if (!existsSync(file)) return whole;
+    return `url(data:font/woff2;base64,${readFileSync(file).toString("base64")})`;
+  });
+  return (katexCssCache = css);
+}
+
+/**
+ * Markdown extensions for maths and diagrams.
+ *
+ * Deliberately NOT supporting single-dollar inline maths. The most common documents through this
+ * API are invoices, and `| Widget | $9.00 |` would be parsed as maths, silently mangling every
+ * price table. Display maths uses `$$...$$`, inline maths uses `\(...\)`. Both are unambiguous.
+ */
+const mathBlock = {
+  name: "mathBlock",
+  level: "block" as const,
+  start(src: string) {
+    return src.indexOf("$$");
+  },
+  tokenizer(src: string) {
+    const m = /^\$\$([\s\S]+?)\$\$(?:\n+|$)/.exec(src);
+    return m ? { type: "mathBlock", raw: m[0], text: m[1].trim() } : undefined;
+  },
+  renderer(token: { text: string }) {
+    return katex.renderToString(token.text, { displayMode: true, throwOnError: false, output: "html" });
+  },
+};
+
+const mathInline = {
+  name: "mathInline",
+  level: "inline" as const,
+  start(src: string) {
+    return src.indexOf("\\(");
+  },
+  tokenizer(src: string) {
+    const m = /^\\\(([\s\S]+?)\\\)/.exec(src);
+    return m ? { type: "mathInline", raw: m[0], text: m[1].trim() } : undefined;
+  },
+  renderer(token: { text: string }) {
+    return katex.renderToString(token.text, { displayMode: false, throwOnError: false, output: "html" });
+  },
+};
+
+const md = marked.use({
+  extensions: [mathBlock, mathInline],
+  renderer: {
+    code(token: { text: string; lang?: string }) {
+      if ((token.lang ?? "").trim().toLowerCase() === "mermaid") {
+        return `<pre class="mermaid">${escapeHtml(token.text)}</pre>`;
+      }
+      return false; // fall through to marked's default code renderer
+    },
+  },
+});
 
 export interface PdfOptions {
   format?: "A4" | "Letter" | "Legal" | "A3" | "A5";
@@ -50,6 +128,19 @@ const MARKDOWN_STYLE = `
   blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 1em; color: #555; }
   img { max-width: 100%; }
   hr { border: none; border-top: 1px solid #ddd; margin: 1.6em 0; }
+
+  /* Diagrams. The .mermaid element starts life as a <pre> holding the source, so it must not
+     inherit the code-block styling, and it must never be split across a page. */
+  pre.mermaid { background: none; border: none; padding: 0; margin: 1.4em 0;
+                text-align: center; break-inside: avoid; page-break-inside: avoid;
+                font-family: inherit; white-space: normal; }
+  pre.mermaid svg { max-width: 100%; height: auto; }
+
+  /* Maths. Display equations get room to breathe and are kept whole; long inline maths is
+     allowed to wrap rather than run off the page edge. */
+  .katex-display { margin: 1.2em 0; break-inside: avoid; page-break-inside: avoid; }
+  .katex { font-size: 1.05em; }
+  .katex-display > .katex { white-space: normal; }
 `;
 
 let browserPromise: Promise<Browser> | null = null;
@@ -137,9 +228,35 @@ export async function htmlToPdf(html: string, opts: PdfOptions = {}): Promise<Bu
 }
 
 export async function markdownToPdf(markdown: string, opts: PdfOptions = {}): Promise<Buffer> {
-  const body = await marked.parse(markdown, { async: true });
-  const html = `<!doctype html><html><head><meta charset="utf-8"><style>${MARKDOWN_STYLE}</style></head><body>${body}</body></html>`;
-  return htmlToPdf(html, opts);
+  const body = await md.parse(markdown, { async: true });
+
+  // Both payloads are heavy, so they are attached only when the document actually uses them:
+  // ~300KB of inlined fonts for maths, ~3.5MB of script for diagrams.
+  const hasMath = body.includes("katex");
+  const hasDiagram = body.includes('class="mermaid"');
+
+  const head =
+    `<meta charset="utf-8"><style>${MARKDOWN_STYLE}</style>` +
+    (hasMath ? `<style>${katexCss()}</style>` : "");
+  const html = `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
+
+  if (!hasDiagram) return htmlToPdf(html, opts);
+
+  return renderPage(async (page) => {
+    await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
+    await page.addScriptTag({ path: mermaidJs });
+    await page.evaluate(async () => {
+      const m = (globalThis as unknown as { mermaid?: any }).mermaid;
+      if (!m) return;
+      m.initialize({ startOnLoad: false, theme: "neutral" });
+      // suppressErrors keeps one malformed diagram from failing the whole document: the offending
+      // block is left as its own source text, which is more useful than a 500.
+      await m.run({ querySelector: "pre.mermaid", suppressErrors: true });
+    });
+    // Mermaid injects SVG synchronously once run() resolves, but web fonts inside the diagram can
+    // still be settling. One frame is enough and costs a few milliseconds.
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
+  }, opts);
 }
 
 export async function urlToPdf(url: string, opts: PdfOptions = {}): Promise<Buffer> {

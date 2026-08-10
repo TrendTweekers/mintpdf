@@ -19,6 +19,15 @@ Body: exactly one of `html`, `markdown`, `url`, plus options:
   output ("pdf" for bytes, "url" for a JSON download link).
 No key needed for a few renders per day. Free key: POST https://mintpdf.dev/v1/keys {"email": "..."}
 
+## What the markdown renderer supports
+GitHub-flavoured markdown, including tables with column alignment and fenced code blocks.
+Mermaid: a fenced mermaid block is rendered as a vector diagram in the PDF.
+Maths: KaTeX. Use $$ ... $$ for display maths and \( ... \) for inline maths.
+Single-dollar $...$ is deliberately NOT treated as maths, so currency in invoice tables survives.
+Page breaks keep code blocks, tables and blockquotes whole, repeat table header rows across pages,
+and never strand a heading at the foot of a page.
+Free browser converter, no key and no signup: https://mintpdf.dev/markdown-to-pdf
+
 ## Limits and pricing
 Anonymous: 3 renders/day per IP, no signup.
 Free key: 100 renders/month, email only, no card.
