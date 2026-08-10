@@ -127,7 +127,26 @@ npm start                # http://localhost:3000
 node dist/smoke.js       # end-to-end render check
 ```
 
-Or with Docker (Chromium and fonts included):
+Or pull the published image, which has Chromium and the fonts baked in:
+
+```bash
+docker run -p 3000:3000 \
+  -e BASE_URL=http://localhost:3000 \
+  -e DATA_DIR=/data -v mintpdf-data:/data \
+  ghcr.io/trendtweekers/mintpdf:latest
+```
+
+Then it is the same API on your own machine, with no limits and nothing leaving it:
+
+```bash
+curl -X POST http://localhost:3000/v1/pdf \
+  -H "Content-Type: application/json" \
+  -d '{"markdown":"# Local","pageNumbers":true}' --output local.pdf
+```
+
+Images are built and published by CI on every change, and each is smoke-tested by starting the
+container and rendering a real PDF from it before being tagged. Tags are `latest` and the short
+commit SHA. Building it yourself works too:
 
 ```bash
 docker build -t mintpdf .
@@ -135,7 +154,8 @@ docker run -p 3000:3000 -e BASE_URL=http://localhost:3000 mintpdf
 ```
 
 Environment: `BASE_URL` (used in download links), `DATA_DIR` (defaults to `/tmp/mintpdf`; mount a
-volume to persist keys), `ANON_DAILY_LIMIT`, `FREE_MONTHLY_LIMIT`, `SOLO_MONTHLY_LIMIT`.
+volume to persist keys), `ANON_DAILY_LIMIT`, `FREE_MONTHLY_LIMIT`, `SOLO_MONTHLY_LIMIT`,
+`TEAM_MONTHLY_LIMIT`, `SCALE_MONTHLY_LIMIT`, `OVERAGE_FACTOR`.
 
 If you want a fuller self-hosted PDF toolchain (Office formats, merging, splitting),
 [Gotenberg](https://gotenberg.dev) is excellent and does more than this does.
