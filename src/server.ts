@@ -129,21 +129,76 @@ interface PdfBody extends PdfOptions {
   output?: "pdf" | "url";
 }
 
-function rateLimit(req: { headers: Record<string, unknown>; ip: string }): { ok: boolean; remaining: number; keyed: boolean } {
+/**
+ * A paid customer whose traffic spikes should get a conversation about their bill, not a broken
+ * integration. Paid keys are therefore served past their monthly quota and flagged, rather than
+ * cut off at exactly the limit.
+ *
+ * The multiplier is a bound, not a gift: it stops a leaked key costing unlimited compute. Free and
+ * anonymous keys keep their hard caps, since without one the free tier is simply unlimited.
+ *
+ * This is deliberately manual. Billing the overage automatically needs Polar metered billing, which
+ * is real work protecting nobody while there are no paying customers. Until then the alert is the
+ * mechanism and reconciliation is a conversation.
+ */
+const OVERAGE_FACTOR = Number(process.env.OVERAGE_FACTOR ?? 2);
+
+interface Quota {
+  ok: boolean;
+  remaining: number;
+  keyed: boolean;
+  overage: boolean;
+  used: number;
+  limit: number;
+}
+
+function rateLimit(req: { headers: Record<string, unknown>; ip: string }): Quota {
   const auth = String(req.headers.authorization ?? "");
   const presented = auth.startsWith("Bearer ") ? auth.slice(7) : null;
   const record = presented ? getKey(presented) : undefined;
   if (record) {
-    const remaining = consumeQuota(`key:${record.key}`, dailyLimitFor(record.tier), "month");
-    return { ok: remaining >= 0, remaining, keyed: true };
+    const limit = dailyLimitFor(record.tier);
+    const paid = record.tier !== "free";
+    const ceiling = paid ? Math.floor(limit * OVERAGE_FACTOR) : limit;
+    const left = consumeQuota(`key:${record.key}`, ceiling, "month");
+    const used = ceiling - left - 1;
+    return {
+      ok: left >= 0,
+      remaining: Math.max(limit - used, 0),
+      keyed: true,
+      overage: paid && used >= limit,
+      used,
+      limit,
+    };
   }
   const remaining = consumeQuota(`ip:${req.ip}`, LIMITS.anonymousPerDay);
-  return { ok: remaining >= 0, remaining, keyed: false };
+  return {
+    ok: remaining >= 0,
+    remaining,
+    keyed: false,
+    overage: false,
+    used: LIMITS.anonymousPerDay - remaining - 1,
+    limit: LIMITS.anonymousPerDay,
+  };
 }
 
 app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
   const quota = rateLimit(req);
   reply.header("x-ratelimit-remaining", String(Math.max(quota.remaining, 0)));
+
+  // Served, but say so on every response so the overage is discovered in the client's logs
+  // rather than on an invoice.
+  if (quota.overage) {
+    reply.header("x-quota-exceeded", "true");
+    reply.header("x-quota-used", String(quota.used));
+    reply.header("x-quota-included", String(quota.limit));
+    notifyOnce(
+      `overage:${String(req.headers.authorization).slice(-8)}`,
+      `📈 <b>Over plan quota</b>\nkey …${escapeHtml(String(req.headers.authorization).slice(-6))}\n` +
+        `${quota.used} of ${quota.limit} included. Still being served. Talk to them about the right plan.`,
+    );
+  }
+
   if (!quota.ok) {
     notifyOnce(
       `limit:${quota.keyed ? String(req.headers.authorization).slice(-8) : req.ip}`,
@@ -152,7 +207,7 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
     return reply.code(429).send({
       error: "daily limit reached",
       hint: quota.keyed
-        ? "Monthly limit reached for this key. Upgrade at /#pricing for a higher limit."
+        ? `Past ${OVERAGE_FACTOR}x the included ${quota.limit} renders on this key. Get in touch or move up a plan at /#pricing.`
         : `Anonymous trial is ${LIMITS.anonymousPerDay}/day. POST /v1/keys {\"email\":\"you@example.com\"} for a free key (${LIMITS.free}/month).`,
     });
   }
