@@ -51,17 +51,32 @@ for (const col of [
   }
 }
 
-export type Tier = "free" | "solo";
+export type Tier = "free" | "solo" | "team" | "scale";
 
+/**
+ * Paid tiers exist so that growth has somewhere to go. With a single $19 plan the most any
+ * customer could ever pay was $19, however much they rendered, which capped revenue by design
+ * rather than by demand.
+ *
+ * Prices live in Polar, not here. This is only the quota each tier grants.
+ */
 export const LIMITS = {
-  /** Anonymous is a rate limit (per IP, per day), keyed tiers are monthly quotas. */
+  /** Anonymous is a rate limit (per IP, per day); keyed tiers are monthly quotas. */
   anonymousPerDay: Number(process.env.ANON_DAILY_LIMIT ?? 3),
   free: Number(process.env.FREE_MONTHLY_LIMIT ?? 100),
-  solo: Number(process.env.SOLO_MONTHLY_LIMIT ?? 2000),
+  solo: Number(process.env.SOLO_MONTHLY_LIMIT ?? 3000),
+  team: Number(process.env.TEAM_MONTHLY_LIMIT ?? 12000),
+  scale: Number(process.env.SCALE_MONTHLY_LIMIT ?? 50000),
 };
 
+export const PAID_TIERS = ["solo", "team", "scale"] as const;
+
+export function isTier(v: string): v is Tier {
+  return v === "free" || v === "solo" || v === "team" || v === "scale";
+}
+
 export function dailyLimitFor(tier: Tier): number {
-  return tier === "solo" ? LIMITS.solo : LIMITS.free;
+  return LIMITS[tier] ?? LIMITS.free;
 }
 
 /**
@@ -80,7 +95,8 @@ export function createKey(email: string): { key: string; tier: Tier; paidKeyExis
     email,
     Date.now(),
   );
-  return { key, tier: "free", paidKeyExists: previous?.tier === "solo" };
+  const wasPaid = previous ? previous.tier !== "free" : false;
+  return { key, tier: "free", paidKeyExists: wasPaid };
 }
 
 export interface KeyRecord {

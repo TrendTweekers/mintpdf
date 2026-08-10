@@ -5,22 +5,45 @@ const TOKEN = process.env.POLAR_ACCESS_TOKEN ?? "";
 const PRODUCT_ID = process.env.POLAR_PRODUCT_ID ?? "";
 const WEBHOOK_SECRET = process.env.POLAR_WEBHOOK_SECRET ?? "";
 
-export const billingEnabled = Boolean(TOKEN && PRODUCT_ID);
+/**
+ * One Polar product per paid tier, configured by environment so prices can change without a deploy.
+ * POLAR_PRODUCT_ID stays as the Solo fallback, so existing subscriptions keep resolving.
+ */
+export const PRODUCTS: Record<string, string> = {
+  solo: process.env.POLAR_PRODUCT_SOLO || PRODUCT_ID,
+  team: process.env.POLAR_PRODUCT_TEAM || "",
+  scale: process.env.POLAR_PRODUCT_SCALE || "",
+};
+
+/** Reverse lookup for webhooks: which tier did they actually buy? */
+export function tierForProduct(productId: string | undefined): string | undefined {
+  if (!productId) return undefined;
+  return Object.entries(PRODUCTS).find(([, id]) => id && id === productId)?.[0];
+}
+
+export function tierAvailable(tier: string): boolean {
+  return Boolean(PRODUCTS[tier]);
+}
+
+export const billingEnabled = Boolean(TOKEN && PRODUCTS.solo);
 
 /** Creates a hosted checkout tied to a specific API key, so the webhook knows what to upgrade. */
 export async function createCheckout(opts: {
   apiKey: string;
   email: string;
   successUrl: string;
+  tier?: string;
 }): Promise<string> {
+  const product = PRODUCTS[opts.tier ?? "solo"];
+  if (!product) throw Object.assign(new Error("that plan is not available yet"), { userFacing: true });
   const res = await fetch(`${API}/checkouts/`, {
     method: "POST",
     headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      products: [PRODUCT_ID],
+      products: [product],
       customer_email: opts.email,
       success_url: opts.successUrl,
-      metadata: { api_key: opts.apiKey },
+      metadata: { api_key: opts.apiKey, tier: opts.tier ?? "solo" },
     }),
   });
   if (!res.ok) {
@@ -77,6 +100,8 @@ export interface PolarEvent {
     customer?: { id?: string; email?: string };
     customer_id?: string;
     subscription_id?: string;
+    product_id?: string;
+    product?: { id?: string };
     checkout?: { metadata?: Record<string, unknown> };
   };
 }
@@ -86,4 +111,18 @@ export function apiKeyFromEvent(evt: PolarEvent): string | undefined {
   const candidates = [evt.data.metadata?.api_key, evt.data.checkout?.metadata?.api_key];
   for (const c of candidates) if (typeof c === "string" && c.startsWith("pm_")) return c;
   return undefined;
+}
+
+/**
+ * Which tier this event grants. The product id is authoritative because it is what Polar actually
+ * charged for; the metadata we set at checkout is only a fallback for event shapes that omit it.
+ * Defaults to solo so a paid customer is never left on the free tier by a shape we did not expect.
+ */
+export function tierFromEvent(evt: PolarEvent): string {
+  const byProduct = tierForProduct(evt.data.product_id ?? evt.data.product?.id);
+  if (byProduct) return byProduct;
+  for (const m of [evt.data.metadata?.tier, evt.data.checkout?.metadata?.tier]) {
+    if (typeof m === "string" && PRODUCTS[m]) return m;
+  }
+  return "solo";
 }

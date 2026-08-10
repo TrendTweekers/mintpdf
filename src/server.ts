@@ -6,9 +6,9 @@ import { dirname, join } from "node:path";
 import { htmlToPdf, markdownToPdf, urlToPdf, closeBrowser, PdfOptions } from "./pdf.js";
 import {
   LIMITS, consumeQuota, createKey, getKey, findKeyByEmail, findKeyBySubscription,
-  setTier, dailyLimitFor, readPdf, storePdf, recordEvent, readStats,
+  setTier, dailyLimitFor, readPdf, storePdf, recordEvent, readStats, isTier, Tier,
 } from "./store.js";
-import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, PolarEvent } from "./polar.js";
+import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, tierFromEvent, tierAvailable, PolarEvent } from "./polar.js";
 import { handleMcpRequest } from "./mcp.js";
 import { getPost, getPosts, getPostSource, renderIndex, renderPost, renderSitemap, STYLE, MARK, FAVICON } from "./blog.js";
 import { renderTool } from "./tool.js";
@@ -253,19 +253,25 @@ app.post("/mcp", async (req, reply) => {
 });
 app.get("/mcp", async (_req, reply) => reply.code(405).send({ error: "POST only (stateless transport)" }));
 
-app.post<{ Body: { key?: string } }>("/v1/upgrade", async (req, reply) => {
+app.post<{ Body: { key?: string; tier?: string } }>("/v1/upgrade", async (req, reply) => {
   if (!billingEnabled) return reply.code(503).send({ error: "billing not configured yet" });
   const presented = (req.body?.key ?? "").trim();
   const record = getKey(presented);
   if (!record) return reply.code(404).send({ error: "unknown key. Get a free key first, then upgrade it." });
-  if (record.tier === "solo") return reply.send({ already_subscribed: true });
+
+  const wanted = (req.body?.tier ?? "solo").trim().toLowerCase();
+  if (wanted === "free" || !isTier(wanted)) return reply.code(400).send({ error: "unknown plan" });
+  if (!tierAvailable(wanted)) return reply.code(503).send({ error: "that plan is not available yet" });
+  if (record.tier === wanted) return reply.send({ already_subscribed: true, tier: record.tier });
+
   try {
     const url = await createCheckout({
       apiKey: record.key,
       email: record.email,
       successUrl: `${BASE_URL}/upgrade/done`,
+      tier: wanted,
     });
-    notify(`💳 <b>Checkout started</b>\n${escapeHtml(record.email)} · $19/mo`);
+    notify(`💳 <b>Checkout started</b>\n${escapeHtml(record.email)} · ${wanted}`);
     return reply.send({ checkout_url: url });
   } catch (err) {
     req.log.error(err);
@@ -295,9 +301,10 @@ app.post("/webhooks/polar", async (req, reply) => {
   }
 
   if (evt.type === "order.paid" || evt.type === "subscription.active") {
-    setTier(target.key, "solo", { customerId: evt.data.customer?.id ?? evt.data.customer_id, subscriptionId: subId });
-    req.log.info({ type: evt.type }, "upgraded key to solo");
-    notify(`💰 <b>PAID — Solo</b>\n${escapeHtml(target.email)}\n$19/month`);
+    const bought = tierFromEvent(evt) as Tier;
+    setTier(target.key, bought, { customerId: evt.data.customer?.id ?? evt.data.customer_id, subscriptionId: subId });
+    req.log.info({ type: evt.type, tier: bought }, "upgraded key");
+    notify(`💰 <b>PAID — ${bought}</b>\n${escapeHtml(target.email)}\n${dailyLimitFor(bought)} renders/month`);
   } else if (evt.type === "subscription.canceled" || evt.type === "subscription.revoked") {
     setTier(target.key, "free");
     req.log.info({ type: evt.type }, "downgraded key to free");

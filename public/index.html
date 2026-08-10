@@ -23,8 +23,12 @@
   "softwareVersion": "0.1.1",
   "offers": [
     { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD", "description": "100 renders per month" },
-    { "@type": "Offer", "name": "Solo", "price": "19", "priceCurrency": "USD", "description": "2,000 renders per month",
-      "priceSpecification": { "@type": "UnitPriceSpecification", "price": "19", "priceCurrency": "USD", "billingDuration": 1, "billingIncrement": 1, "unitCode": "MON" } }
+    { "@type": "Offer", "name": "Solo", "price": "19", "priceCurrency": "USD", "description": "3,000 renders per month",
+      "priceSpecification": { "@type": "UnitPriceSpecification", "price": "19", "priceCurrency": "USD", "billingDuration": 1, "billingIncrement": 1, "unitCode": "MON" } },
+    { "@type": "Offer", "name": "Team", "price": "49", "priceCurrency": "USD", "description": "12,000 renders per month",
+      "priceSpecification": { "@type": "UnitPriceSpecification", "price": "49", "priceCurrency": "USD", "billingDuration": 1, "billingIncrement": 1, "unitCode": "MON" } },
+    { "@type": "Offer", "name": "Scale", "price": "129", "priceCurrency": "USD", "description": "50,000 renders per month",
+      "priceSpecification": { "@type": "UnitPriceSpecification", "price": "129", "priceCurrency": "USD", "billingDuration": 1, "billingIncrement": 1, "unitCode": "MON" } }
   ],
   "potentialAction": {
     "@type": "CreateAction",
@@ -156,6 +160,11 @@
   footer a { color:var(--mut); }
   footer a:hover { color:var(--acc); }
   @media (max-width:900px){ .c8,.c6,.c4,.c5,.c7 { grid-column:span 12; } }
+  .tiers td { padding: 3px 10px 3px 0; }
+  .tiers td:first-child { color: var(--ink); }
+  #uptier { background:#090d0b; border:none; border-right:1px solid var(--line); color:var(--ink);
+            padding:0 10px; font-family:inherit; font-size:.82rem; }
+  #uptier:focus { outline:none; }
 </style>
 </head>
 <body>
@@ -332,8 +341,17 @@ File size:      166 kB</span>
       <li>No card, no seats, no sales calls</li>
     </ul>
     <div class="tierline"></div>
-    <div class="big sans">$19<small> /month · Solo · 2,000 renders/month</small></div>
+    <table class="spec tiers">
+      <tr><td>Solo</td><td><b>$19</b> /mo</td><td>3,000 renders/month</td></tr>
+      <tr><td>Team</td><td><b>$49</b> /mo</td><td>12,000 renders/month</td></tr>
+      <tr><td>Scale</td><td><b>$129</b> /mo</td><td>50,000 renders/month</td></tr>
+    </table>
     <form id="upform" class="keyform" autocomplete="off">
+      <select id="uptier" aria-label="Plan">
+        <option value="solo">Solo</option>
+        <option value="team">Team</option>
+        <option value="scale">Scale</option>
+      </select>
       <input id="upkey" type="text" required placeholder="pm_… your key" aria-label="Your API key">
       <button type="submit">UPGRADE</button>
     </form>
@@ -503,16 +521,17 @@ File size:      166 kB</span>
   up.addEventListener('submit', async function (e) {
     e.preventDefault();
     var key = document.getElementById('upkey').value.trim();
+    var tier = document.getElementById('uptier').value;
     upout.textContent = 'opening checkout…';
     try {
       var res = await fetch('/v1/upgrade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: key })
+        body: JSON.stringify({ key: key, tier: tier })
       });
       var data = await res.json();
       if (data.checkout_url) { window.location = data.checkout_url; }
-      else if (data.already_subscribed) { upout.textContent = 'This key is already on Solo.'; }
+      else if (data.already_subscribed) { upout.textContent = 'This key is already on ' + (data.tier || 'that plan') + '.'; }
       else { upout.textContent = data.error || 'Could not start checkout.'; }
     } catch (err) {
       upout.textContent = 'Network error. Try again.';
