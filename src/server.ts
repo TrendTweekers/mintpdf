@@ -1,11 +1,12 @@
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { htmlToPdf, markdownToPdf, urlToPdf, closeBrowser, PdfOptions } from "./pdf.js";
 import {
   LIMITS, consumeQuota, createKey, getKey, findKeyByEmail, findKeyBySubscription,
-  setTier, dailyLimitFor, readPdf, storePdf,
+  setTier, dailyLimitFor, readPdf, storePdf, recordEvent, readStats,
 } from "./store.js";
 import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, PolarEvent } from "./polar.js";
 import { handleMcpRequest } from "./mcp.js";
@@ -88,15 +89,32 @@ app.addHook("onRequest", async (req, reply) => {
   }
 });
 
+/** Daily salted hash of the IP: enough to count unique visitors, useless for identifying anyone. */
+function visitorHash(ip: string): string {
+  const salt = new Date().toISOString().slice(0, 10) + (process.env.ADMIN_KEY ?? "mintpdf");
+  return createHash("sha256").update(salt + ip).digest("hex").slice(0, 16);
+}
+
 app.post<{ Body: { path?: string; ref?: string } }>("/v1/beacon", async (req, reply) => {
   reply.code(204).send();
-  if (!notifyEnabled) return;
   const ua = String(req.headers["user-agent"] ?? "");
-  if (/bot|crawler|spider|preview|monitor|curl|headless/i.test(ua)) return;
-  if (!firstToday(`visit:${req.ip}`)) return;
+  const looksAutomated = /bot|crawler|spider|preview|monitor|curl|headless|python|axios|wget|scan/i.test(ua);
   const path = String(req.body?.path ?? "/").slice(0, 120);
   const ref = String(req.body?.ref ?? "").slice(0, 200);
   const where = await locate(req.ip, String(req.headers["cf-ipcountry"] ?? ""));
+
+  // Recorded either way, flagged rather than dropped, so the bot share is visible instead of guessed.
+  recordEvent({
+    kind: "visit",
+    path,
+    ref,
+    country: where,
+    visitor: visitorHash(req.ip),
+    bot: looksAutomated,
+  });
+
+  if (!notifyEnabled || looksAutomated) return;
+  if (!firstToday(`visit:${req.ip}`)) return;
   notify(
     `👀 <b>Visitor</b>` + (where ? `  ${where}` : "") +
       `\n${escapeHtml(path)}` +
@@ -157,6 +175,13 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
 
   const source = body.html ? "html" : body.markdown ? "markdown" : "url";
   const fromTool = String(req.headers.referer ?? "").includes("/markdown-to-pdf");
+  recordEvent({
+    kind: "render",
+    detail: source,
+    ref: String(req.headers.referer ?? "").slice(0, 200),
+    visitor: visitorHash(req.ip),
+    bot: quota.keyed ? false : /bot|crawler|curl|python|headless/i.test(String(req.headers["user-agent"] ?? "")),
+  });
   notifyOnce(
     `render:${quota.keyed ? "key" : "ip"}:${quota.keyed ? String(req.headers.authorization).slice(-8) : req.ip}`,
     `📄 <b>PDF rendered</b>${fromTool ? " (free converter page)" : ""}\n` +
@@ -179,6 +204,12 @@ app.post<{ Body: { email?: string } }>("/v1/keys", async (req, reply) => {
   const ipQuota = consumeQuota(`keygen:${req.ip}`, 3);
   if (ipQuota < 0) return reply.code(429).send({ error: "too many keys requested today" });
   const issued = createKey(email);
+  recordEvent({
+    kind: "key",
+    visitor: visitorHash(req.ip),
+    ref: String(req.headers.referer ?? "").slice(0, 200),
+    detail: email.split("@")[1] ?? "",
+  });
   notify(
     issued.paidKeyExists
       ? `⚠️ <b>Paid customer asked for a new key</b>\n${escapeHtml(email)}\n` +
@@ -324,6 +355,53 @@ for (const slug of CONVERTER_SLUGS) {
     reply.type("text/html; charset=utf-8").send(renderConverter(slug, BASE_URL, MARK, FAVICON, STYLE)),
   );
 }
+
+/**
+ * Private stats. Telegram pings are unaggregatable, and a third-party script would cost page weight
+ * on the one page we are trying to rank. This reads the events we already collect.
+ * Disabled entirely unless ADMIN_KEY is set, and 404s rather than 401s so it is not discoverable.
+ */
+app.get<{ Querystring: { key?: string; days?: string } }>("/admin/stats", async (req, reply) => {
+  const secret = process.env.ADMIN_KEY;
+  if (!secret || req.query.key !== secret) return reply.code(404).send({ error: "not found" });
+
+  const days = Math.min(Math.max(Number(req.query.days ?? 30), 1), 365);
+  const s = readStats(days);
+  const table = (title: string, rows: Record<string, string | number>[]) => {
+    if (!rows.length) return `<h2>${title}</h2><p class="muted">Nothing yet.</p>`;
+    const cols = Object.keys(rows[0]);
+    return `<h2>${title}</h2><table><thead><tr>${cols
+      .map((c) => `<th>${escapeHtml(c)}</th>`)
+      .join("")}</tr></thead><tbody>${rows
+      .map(
+        (r) =>
+          `<tr>${cols.map((c) => `<td>${escapeHtml(String(r[c] ?? ""))}</td>`).join("")}</tr>`,
+      )
+      .join("")}</tbody></table>`;
+  };
+
+  return reply.type("text/html; charset=utf-8").send(
+    `<!doctype html><meta charset="utf-8"><title>MintPDF stats</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+ body{font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;background:#0b0f0d;color:#dbe7e1;margin:0;padding:28px}
+ h1{font-size:1.3rem;margin:0 0 4px} h2{font-size:1rem;margin:26px 0 8px;color:#4aa885}
+ .muted{color:#7f9990} table{border-collapse:collapse;width:100%;max-width:900px;margin:0}
+ th,td{border-bottom:1px solid #1e2a25;padding:6px 10px;text-align:left}
+ th{color:#7f9990;font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em}
+ td{font-variant-numeric:tabular-nums}
+</style>
+<h1>MintPDF stats</h1>
+<p class="muted">Last ${days} days. Bot rows are flagged by user agent, so treat the split as indicative.
+Add <code>?days=7</code> to narrow.</p>
+${table("By day", s.daily)}
+${table("Pages (humans)", s.paths)}
+${table("Referrers (humans)", s.refs)}
+${table("Countries (humans)", s.countries)}
+${table("Renders by source", s.renders)}
+${table("Bot traffic by country", s.botsSeen)}`,
+  );
+});
 
 app.get("/sitemap.xml", async (_req, reply) =>
   reply.type("application/xml").send(renderSitemap(BASE_URL)),

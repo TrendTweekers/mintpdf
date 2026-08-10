@@ -20,6 +20,22 @@ db.exec(`
     count INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (bucket, day)
   );
+  /* Own analytics. Telegram pings cannot be aggregated or filtered after the fact, so the same
+     signal is kept here as rows. No third-party script, no cookie, no personal data: the visitor
+     is a daily salted hash of the IP, which is enough to count uniques and nothing else. */
+  CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at INTEGER NOT NULL,
+    day TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    path TEXT,
+    ref TEXT,
+    country TEXT,
+    visitor TEXT,
+    bot INTEGER NOT NULL DEFAULT 0,
+    detail TEXT
+  );
+  CREATE INDEX IF NOT EXISTS events_day ON events (day, kind);
 `);
 
 /** Additive migrations; safe to run on an existing database. */
@@ -153,3 +169,78 @@ export function cleanupExpiredFiles(): void {
 }
 
 setInterval(cleanupExpiredFiles, 10 * 60 * 1000).unref();
+
+/* ---------------------------------------------------------------- own analytics */
+
+export interface EventInput {
+  kind: "visit" | "render" | "key" | "limit";
+  path?: string;
+  ref?: string;
+  country?: string;
+  visitor?: string;
+  bot?: boolean;
+  detail?: string;
+}
+
+export function recordEvent(e: EventInput): void {
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO events (at, day, kind, path, ref, country, visitor, bot, detail)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    now,
+    new Date(now).toISOString().slice(0, 10),
+    e.kind,
+    e.path?.slice(0, 160) ?? null,
+    e.ref?.slice(0, 200) ?? null,
+    e.country?.slice(0, 60) ?? null,
+    e.visitor?.slice(0, 64) ?? null,
+    e.bot ? 1 : 0,
+    e.detail?.slice(0, 200) ?? null,
+  );
+}
+
+export interface StatsRow {
+  [key: string]: string | number;
+}
+
+/** Everything the stats page needs, in one place so the route stays dumb. */
+export function readStats(days = 30): Record<string, StatsRow[]> {
+  const since = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
+  const q = (sql: string) => db.prepare(sql).all(since) as unknown as StatsRow[];
+  return {
+    daily: q(
+      `SELECT day,
+              SUM(kind='visit' AND bot=0) AS humans,
+              SUM(kind='visit' AND bot=1) AS bots,
+              COUNT(DISTINCT CASE WHEN kind='visit' AND bot=0 THEN visitor END) AS uniques,
+              SUM(kind='render') AS renders,
+              SUM(kind='key') AS keys
+       FROM events WHERE day >= ? GROUP BY day ORDER BY day DESC`,
+    ),
+    paths: q(
+      `SELECT path, COUNT(*) AS hits, COUNT(DISTINCT visitor) AS uniques
+       FROM events WHERE day >= ? AND kind='visit' AND bot=0
+       GROUP BY path ORDER BY hits DESC LIMIT 25`,
+    ),
+    refs: q(
+      `SELECT COALESCE(NULLIF(ref,''),'(direct)') AS ref, COUNT(*) AS hits
+       FROM events WHERE day >= ? AND kind='visit' AND bot=0
+       GROUP BY ref ORDER BY hits DESC LIMIT 25`,
+    ),
+    countries: q(
+      `SELECT COALESCE(NULLIF(country,''),'(unknown)') AS country, COUNT(*) AS hits
+       FROM events WHERE day >= ? AND kind='visit' AND bot=0
+       GROUP BY country ORDER BY hits DESC LIMIT 20`,
+    ),
+    renders: q(
+      `SELECT COALESCE(detail,'(unknown)') AS source, COUNT(*) AS n
+       FROM events WHERE day >= ? AND kind='render' GROUP BY detail ORDER BY n DESC`,
+    ),
+    botsSeen: q(
+      `SELECT COALESCE(NULLIF(country,''),'(unknown)') AS country, COUNT(*) AS hits
+       FROM events WHERE day >= ? AND kind='visit' AND bot=1
+       GROUP BY country ORDER BY hits DESC LIMIT 10`,
+    ),
+  };
+}
