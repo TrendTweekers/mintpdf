@@ -1,0 +1,88 @@
+name: docker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "src/**"
+      - "public/**"
+      - "content/**"
+      - "package*.json"
+      - ".github/workflows/docker.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # GitHub's own registry always works, using the token the workflow already has.
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Docker Hub is where people actually look, but it needs credentials. Skipped
+      # rather than failed when they are absent, so the build still verifies itself.
+      - name: Log in to Docker Hub
+        id: dockerhub
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Work out the tags
+        id: tags
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          TAGS="ghcr.io/${{ github.repository_owner }}/mintpdf:latest,ghcr.io/${{ github.repository_owner }}/mintpdf:$SHA"
+          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            TAGS="$TAGS,docker.io/${{ secrets.DOCKERHUB_USERNAME }}/mintpdf:latest,docker.io/${{ secrets.DOCKERHUB_USERNAME }}/mintpdf:$SHA"
+          fi
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          echo "Publishing: $TAGS"
+
+      # amd64 only on purpose: the image installs Chromium, and building that under
+      # QEMU emulation for arm64 takes the best part of an hour for no current demand.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Proves the published image actually renders a PDF, rather than merely building.
+      - name: Smoke test the published image
+        run: |
+          docker run -d --name mintpdf -p 3000:3000 -e DATA_DIR=/tmp/mintpdf \
+            ghcr.io/${{ github.repository_owner }}/mintpdf:latest
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:3000/ && break
+            sleep 2
+          done
+          curl -sS --max-time 90 -X POST http://127.0.0.1:3000/v1/pdf \
+            -H "Content-Type: application/json" \
+            -d '{"markdown":"# Self-host smoke test\n\n| Item | Price |\n|:--|--:|\n| Widget | $9.00 |"}' \
+            --output /tmp/out.pdf
+          test -f /tmp/out.pdf
+          head -c 4 /tmp/out.pdf | grep -q '%PDF'
+          test "$(stat -c%s /tmp/out.pdf)" -gt 1000
+          echo "Rendered $(stat -c%s /tmp/out.pdf) bytes from the container."
+          docker logs mintpdf | tail -5
+          docker rm -f mintpdf
