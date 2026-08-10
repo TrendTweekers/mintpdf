@@ -175,6 +175,10 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
   .guidelinks { display:flex; flex-direction:column; gap:8px; margin:10px 0 0; padding:0; list-style:none; }
   .guidelinks a { color:var(--acc); text-decoration:none; }
   .guidelinks a:hover { text-decoration:underline; }
+  .rel { display:flex; gap:10px; flex-wrap:wrap; }
+  .rel a { color:var(--acc); text-decoration:none; border:1px solid var(--line);
+           border-radius:999px; padding:6px 14px; font-size:.82rem; }
+  .rel a:hover { border-color:var(--acc); }
   @media (max-width:900px){ .tool { grid-template-columns:1fr; } }
 </style></head><body>
 <div class="wrap">
@@ -297,7 +301,14 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
     files in CI, and an MCP server so an AI agent can make PDFs itself with
     <code style="color:var(--acc)">npx -y mintpdf-mcp</code>.</p>
 
-    <h2>Guides</h2>
+    <h2>Other free converters</h2>
+    <p style="margin:0 0 10px">Same renderer, same page-break handling, no account needed:</p>
+    <div class="rel">
+      <a href="/json-to-pdf">JSON to PDF</a>
+      <a href="/csv-to-pdf">CSV to PDF</a>
+    </div>
+
+    <h2 style="margin-top:22px">Guides</h2>
     <ul class="guidelinks">
       <li><a href="/guides/chromium-pdf-page-breaks">Why headless Chrome splits PDFs in the wrong places</a></li>
       <li><a href="/guides/pdf-github-action">How to generate a PDF in a GitHub Action</a></li>
