@@ -1,6 +1,6 @@
 ---
 title: Headless Chrome splits your PDFs in the wrong places. Here is the CSS that fixes it.
-published: false
+published: true
 canonical_url: https://mintpdf.dev/guides/chromium-pdf-page-breaks
 description: Chromium's default fragmentation cuts code blocks, tables and headings in half across page boundaries. A short stylesheet fixes almost all of it, and one common rule silently breaks Markdown tables.
 tags: pdf, css, puppeteer, webdev
@@ -35,6 +35,9 @@ None of these are bugs. They are the absence of instructions.
 /* Keep blocks whole across page boundaries. */
 pre, table, blockquote, figure, img { break-inside: avoid; page-break-inside: avoid; }
 tr, li                              { break-inside: avoid; page-break-inside: avoid; }
+
+/* Rendered diagrams and display maths are blocks too, and both look absurd cut in half. */
+pre.mermaid, .katex-display         { break-inside: avoid; page-break-inside: avoid; }
 
 /* Never strand a heading at the foot of a page. */
 h1, h2, h3, h4, h5, h6 { break-after: avoid; page-break-after: avoid; }
@@ -156,5 +159,7 @@ looks at a price column and frowns.
 
 ---
 
-*I maintain [MintPDF](https://mintpdf.dev), an API that turns HTML or Markdown into PDFs, which is
-where all of this came from. The stylesheet above is the one it ships.*
+*The stylesheet above is the one I ship in my own
+[Markdown to PDF converter](https://mintpdf.dev/markdown-to-pdf), which is where all of this came
+from. It is free and needs no account, so it is an easy way to see the difference these rules make
+without wiring up Puppeteer yourself.*
