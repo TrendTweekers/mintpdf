@@ -31,11 +31,16 @@ For the MCP package, set it as the `MINTPDF_API_KEY` environment variable.
 
 | Tier | Limit |
 |---|---|
-| Anonymous | 3 renders/day per IP |
+| Anonymous | 10 renders/day per IP |
 | Free key | 100 renders/month |
-| Solo ($19/month) | 2,000 renders/month |
+| Solo ($19/month) | 3,000 renders/month |
+| Team ($49/month) | 12,000 renders/month |
+| Scale ($129/month) | 50,000 renders/month |
 
-Exceeding a limit returns HTTP 429 with a JSON body explaining which limit was reached.
+Exceeding a limit returns HTTP 429 with a JSON body explaining which limit was reached. Paid
+keys are an exception: they are served past their included quota and flagged with
+`x-quota-exceeded`, `x-quota-used` and `x-quota-included` headers, so a traffic spike costs you
+a conversation rather than a broken integration.
 
 ## Upgrading
 

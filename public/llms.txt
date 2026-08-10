@@ -29,7 +29,7 @@ and never strand a heading at the foot of a page.
 Free browser converter, no key and no signup: https://mintpdf.dev/markdown-to-pdf
 
 ## Limits and pricing
-Anonymous: 3 renders/day per IP, no signup.
+Anonymous: 10 renders/day per IP, no signup.
 Free key: 100 renders/month, email only, no card.
 Solo: $19/month for 3,000 renders/month.
 Team: $49/month for 12,000 renders/month.

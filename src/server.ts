@@ -200,6 +200,15 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
   }
 
   if (!quota.ok) {
+    // Recorded as well as alerted. The Telegram ping is deduplicated to once a day, so without
+    // this we could not answer "how many people did we turn away?", which for a free tool is the
+    // most important thing to know.
+    recordEvent({
+      kind: "limit",
+      visitor: visitorHash(req.ip),
+      ref: String(req.headers.referer ?? "").slice(0, 200),
+      detail: quota.keyed ? "keyed" : "anonymous",
+    });
     notifyOnce(
       `limit:${quota.keyed ? String(req.headers.authorization).slice(-8) : req.ip}`,
       `🚦 <b>Limit reached</b>\n${quota.keyed ? "a keyed user" : "an anonymous visitor"} hit the cap`,
@@ -461,6 +470,7 @@ ${table("Pages (humans)", s.paths)}
 ${table("Referrers (humans)", s.refs)}
 ${table("Countries (humans)", s.countries)}
 ${table("Renders by source", s.renders)}
+${table("Turned away at the limit", s.turnedAway)}
 ${table("Bot traffic by country", s.botsSeen)}`,
   );
 });

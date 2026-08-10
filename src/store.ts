@@ -62,7 +62,7 @@ export type Tier = "free" | "solo" | "team" | "scale";
  */
 export const LIMITS = {
   /** Anonymous is a rate limit (per IP, per day); keyed tiers are monthly quotas. */
-  anonymousPerDay: Number(process.env.ANON_DAILY_LIMIT ?? 3),
+  anonymousPerDay: Number(process.env.ANON_DAILY_LIMIT ?? 10),
   free: Number(process.env.FREE_MONTHLY_LIMIT ?? 100),
   solo: Number(process.env.SOLO_MONTHLY_LIMIT ?? 3000),
   team: Number(process.env.TEAM_MONTHLY_LIMIT ?? 12000),
@@ -231,7 +231,8 @@ export function readStats(days = 30): Record<string, StatsRow[]> {
               SUM(kind='visit' AND bot=1) AS bots,
               COUNT(DISTINCT CASE WHEN kind='visit' AND bot=0 THEN visitor END) AS uniques,
               SUM(kind='render') AS renders,
-              SUM(kind='key') AS keys
+              SUM(kind='key') AS keys,
+              SUM(kind='limit') AS turned_away
        FROM events WHERE day >= ? GROUP BY day ORDER BY day DESC`,
     ),
     paths: q(
@@ -252,6 +253,13 @@ export function readStats(days = 30): Record<string, StatsRow[]> {
     renders: q(
       `SELECT COALESCE(detail,'(unknown)') AS source, COUNT(*) AS n
        FROM events WHERE day >= ? AND kind='render' GROUP BY detail ORDER BY n DESC`,
+    ),
+    turnedAway: q(
+      `SELECT COALESCE(detail,'?') AS who,
+              COALESCE(NULLIF(ref,''),'(direct)') AS came_from,
+              COUNT(*) AS hits, COUNT(DISTINCT visitor) AS people
+       FROM events WHERE day >= ? AND kind='limit'
+       GROUP BY detail, ref ORDER BY hits DESC LIMIT 15`,
     ),
     botsSeen: q(
       `SELECT COALESCE(NULLIF(country,''),'(unknown)') AS country, COUNT(*) AS hits
