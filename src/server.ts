@@ -11,6 +11,7 @@ import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, PolarEv
 import { handleMcpRequest } from "./mcp.js";
 import { getPost, getPosts, getPostSource, renderIndex, renderPost, renderSitemap, STYLE, MARK, FAVICON } from "./blog.js";
 import { renderTool } from "./tool.js";
+import { renderConverter, CONVERTER_SLUGS } from "./converters.js";
 import { notify, notifyOnce, notifyEnabled, escapeHtml, locate, firstToday } from "./notify.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -317,6 +318,12 @@ app.get<{ Params: { slug: string } }>("/guides/:slug", async (req, reply) => {
 app.get("/markdown-to-pdf", async (_req, reply) =>
   reply.type("text/html; charset=utf-8").send(renderTool(BASE_URL, MARK, FAVICON, STYLE)),
 );
+
+for (const slug of CONVERTER_SLUGS) {
+  app.get(`/${slug}`, async (_req, reply) =>
+    reply.type("text/html; charset=utf-8").send(renderConverter(slug, BASE_URL, MARK, FAVICON, STYLE)),
+  );
+}
 
 app.get("/sitemap.xml", async (_req, reply) =>
   reply.type("application/xml").send(renderSitemap(BASE_URL)),

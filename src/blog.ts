@@ -215,7 +215,14 @@ or add it to your MCP client with <code>npx -y mintpdf-mcp</code>. <a href="/">F
 }
 
 export function renderSitemap(baseUrl: string): string {
-  const urls = ["", "/markdown-to-pdf", "/guides", ...getPosts().map((p) => `/guides/${p.slug}`)];
+  const urls = [
+    "",
+    "/markdown-to-pdf",
+    "/json-to-pdf",
+    "/csv-to-pdf",
+    "/guides",
+    ...getPosts().map((p) => `/guides/${p.slug}`),
+  ];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((u) => `  <url><loc>${baseUrl}${u}</loc></url>`).join("\n")}
