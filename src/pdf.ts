@@ -165,6 +165,71 @@ async function getBrowser(): Promise<Browser> {
   return browserPromise;
 }
 
+/**
+ * Render admission control.
+ *
+ * Every render is a Chromium tab, so concurrency is bounded by memory long before it is bounded by
+ * CPU or by the bill. Without a gate, a traffic spike opens a tab per request until the container is
+ * killed by the OOM reaper and *every* request fails, including the ones already nearly finished.
+ *
+ * A gate converts that cliff into a slowdown: a small number render at once, a bounded number wait,
+ * and anything beyond that is refused immediately with a 503 and a Retry-After. Turning some
+ * visitors away fast is strictly better than serving everyone a timeout.
+ *
+ * The defaults are deliberately conservative for a single small instance. Raise RENDER_CONCURRENCY
+ * only alongside evidence from a load test on the real instance size.
+ */
+const MAX_CONCURRENT = Math.max(1, Number(process.env.RENDER_CONCURRENCY ?? 3));
+const MAX_QUEUE = Math.max(0, Number(process.env.RENDER_QUEUE ?? 20));
+const QUEUE_WAIT_MS = Math.max(1000, Number(process.env.RENDER_QUEUE_WAIT_MS ?? 20_000));
+
+export class OverloadedError extends Error {
+  readonly retryAfterSeconds: number;
+  constructor(message: string, retryAfterSeconds = 5) {
+    super(message);
+    this.name = "OverloadedError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+let active = 0;
+const waiting: Array<{ resolve: () => void; reject: (e: Error) => void; timer: NodeJS.Timeout }> = [];
+
+/** Snapshot for /admin/stats, so load is observable rather than guessed at. */
+export function renderLoad(): { active: number; queued: number; max: number } {
+  return { active, queued: waiting.length, max: MAX_CONCURRENT };
+}
+
+async function acquireSlot(): Promise<void> {
+  if (active < MAX_CONCURRENT) {
+    active += 1;
+    return;
+  }
+  if (waiting.length >= MAX_QUEUE) {
+    throw new OverloadedError("Too many renders in progress. Try again in a few seconds.");
+  }
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      const i = waiting.findIndex((w) => w.timer === timer);
+      if (i >= 0) waiting.splice(i, 1);
+      reject(new OverloadedError("Timed out waiting for a render slot.", 10));
+    }, QUEUE_WAIT_MS);
+    waiting.push({ resolve, reject, timer });
+  });
+  // The slot was handed over by releaseSlot, which deliberately did not decrement, so `active`
+  // already accounts for this render.
+}
+
+function releaseSlot(): void {
+  const next = waiting.shift();
+  if (next) {
+    clearTimeout(next.timer);
+    next.resolve();
+    return;
+  }
+  active -= 1;
+}
+
 function headerFooterTemplate(text: string | undefined, pageNumbers: boolean, isFooter: boolean): string {
   if (!text && !(isFooter && pageNumbers)) return "<span></span>";
   const num = isFooter && pageNumbers
@@ -181,6 +246,9 @@ async function renderPage(
   setup: (page: import("puppeteer").Page) => Promise<void>,
   opts: PdfOptions,
 ): Promise<Buffer> {
+  // Admission control before the browser is touched: a queued request must not hold a Chromium tab
+  // open while it waits, or the queue would consume exactly the resource it exists to protect.
+  await acquireSlot();
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
@@ -218,6 +286,9 @@ async function renderPage(
     return Buffer.from(pdf);
   } finally {
     await page.close().catch(() => {});
+    // Release after the tab is actually gone, so the next render starts against reclaimed memory
+    // rather than overlapping with a tab that is still tearing down.
+    releaseSlot();
   }
 }
 

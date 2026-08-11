@@ -233,7 +233,14 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
     else if (body.markdown) pdf = await markdownToPdf(body.markdown, body);
     else pdf = await urlToPdf(body.url as string, { ...body, waitForNetworkIdle: true });
   } catch (err) {
-    const e = err as Error & { statusCode?: number };
+    const e = err as Error & { statusCode?: number; retryAfterSeconds?: number };
+    // Overload is a distinct, temporary condition and clients should be told to come back rather
+    // than shown a 500 that reads like the render itself was broken.
+    if (e.name === "OverloadedError") {
+      reply.header("retry-after", String(e.retryAfterSeconds ?? 5));
+      recordEvent({ kind: "limit", path: "/v1/pdf", detail: "overloaded", visitor: visitorHash(req.ip) });
+      return reply.code(503).send({ error: e.message });
+    }
     return reply.code(e.statusCode ?? 500).send({ error: e.message });
   }
 
