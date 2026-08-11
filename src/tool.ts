@@ -7,6 +7,8 @@
  * The page therefore has to be a genuinely good converter first and a landing page second.
  */
 
+import { ANALYTICS, TRACK_FN } from "./analytics.js";
+
 const SAMPLES: Record<string, { label: string; body: string }> = {
   invoice: {
     label: "Invoice",
@@ -180,7 +182,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
            border-radius:999px; padding:6px 14px; font-size:.82rem; }
   .rel a:hover { border-color:var(--acc); }
   @media (max-width:900px){ .tool { grid-template-columns:1fr; } }
-</style></head><body>
+</style>${ANALYTICS}</head><body>
 <div class="wrap">
   <div class="cell head">
     <a class="brand" href="/">${mark}MintPDF</a>
@@ -331,7 +333,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
   </span>
 </footer>
 <script>
-(function () {
+(function () {${TRACK_FN}
   var SAMPLES = ${JSON.stringify(Object.fromEntries(Object.entries(SAMPLES).map(([k, v]) => [k, v.body])))};
   var go = document.getElementById('go'), status = document.getElementById('status');
   var preview = document.getElementById('preview'), dl = document.getElementById('dl');
@@ -366,9 +368,15 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
       if (res.status === 429) {
         status.textContent = 'Daily free limit reached.';
         keybox.classList.add('show');
+        track('limit-hit', { page: 'markdown-to-pdf' });
         return;
       }
-      if (!data.download_url) { status.textContent = data.error || 'Something went wrong.'; return; }
+      if (!data.download_url) {
+        status.textContent = data.error || 'Something went wrong.';
+        track('render-failed', { page: 'markdown-to-pdf' });
+        return;
+      }
+      track('render', { source: 'markdown' });
       preview.innerHTML = '<iframe src="' + data.download_url + '#toolbar=0" title="Rendered PDF"></iframe>';
       dl.href = data.download_url; dl.style.display = 'inline';
       var left = res.headers.get('x-ratelimit-remaining');
@@ -395,6 +403,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
         apiKey = data.key;
         out.innerHTML = 'Key ready, this page will use it: <code>' + data.key + '</code>';
         status.textContent = 'Free key active, ' + data.daily_limit + ' conversions a month.';
+        track('key-created', { page: 'markdown-to-pdf' });
       } else {
         out.textContent = data.error || 'Could not issue a key.';
       }

@@ -166,6 +166,7 @@
             padding:0 10px; font-family:inherit; font-size:.82rem; }
   #uptier:focus { outline:none; }
 </style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="7a43ccd2-b47d-45c2-bb22-05fc5fd46daa" data-domains="mintpdf.dev"></script>
 </head>
 <body>
 
@@ -436,6 +437,7 @@ File size:      166 kB</span>
       });
       var data = await res.json();
       if (data.key) {
+        try { if (window.umami) window.umami.track('key-created', { page: 'home' }); } catch (e) {}
         out.innerHTML = 'Your key: <code id="k">' + data.key + '</code>' +
           '<button class="copy" type="button">copy</button><br>' +
           'Send it as <code>Authorization: Bearer …</code> · ' + data.daily_limit + '/day.';
@@ -523,6 +525,7 @@ File size:      166 kB</span>
     var key = document.getElementById('upkey').value.trim();
     var tier = document.getElementById('uptier').value;
     upout.textContent = 'opening checkout…';
+    try { if (window.umami) window.umami.track('checkout-start', { tier: tier }); } catch (e) {}
     try {
       var res = await fetch('/v1/upgrade', {
         method: 'POST',

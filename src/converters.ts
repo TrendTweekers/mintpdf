@@ -10,6 +10,8 @@
  * /v1/pdf endpoint. That keeps the rendering path, and its page-break handling, identical everywhere.
  */
 
+import { ANALYTICS, TRACK_FN } from "./analytics.js";
+
 interface ConverterConfig {
   slug: string;
   h1: string;
@@ -279,7 +281,7 @@ export function renderConverter(
            border-radius:999px; padding:6px 14px; font-size:.82rem; }
   .rel a:hover { border-color:var(--acc); }
   @media (max-width:900px){ .tool { grid-template-columns:1fr; } }
-</style></head><body>
+</style>${ANALYTICS}</head><body>
 <div class="wrap">
   <div class="cell head">
     <a class="brand" href="/">${mark}MintPDF</a>
@@ -361,7 +363,7 @@ export function renderConverter(
   </span>
 </footer>
 <script>
-(function () {
+(function () {${TRACK_FN}
 ${TRANSFORMS}
   var go = document.getElementById('go'), status = document.getElementById('status');
   var preview = document.getElementById('preview'), dl = document.getElementById('dl');
@@ -389,8 +391,17 @@ ${TRANSFORMS}
         })
       });
       var data = await res.json();
-      if (res.status === 429) { status.textContent = 'Daily free limit reached. A free key raises it to 100 a month.'; return; }
-      if (!data.download_url) { status.textContent = data.error || 'Something went wrong.'; return; }
+      if (res.status === 429) {
+        status.textContent = 'Daily free limit reached. A free key raises it to 100 a month.';
+        track('limit-hit', { page: '${cfg.slug}' });
+        return;
+      }
+      if (!data.download_url) {
+        status.textContent = data.error || 'Something went wrong.';
+        track('render-failed', { page: '${cfg.slug}' });
+        return;
+      }
+      track('render', { source: '${cfg.slug}' });
       preview.innerHTML = '<iframe src="' + data.download_url + '#toolbar=0" title="Rendered PDF"></iframe>';
       dl.href = data.download_url; dl.style.display = 'inline';
       var left = res.headers.get('x-ratelimit-remaining');

@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { marked } from "marked";
+import { ANALYTICS } from "./analytics.js";
 
 export interface Post {
   slug: string;
@@ -153,7 +154,7 @@ function shell(opts: { title: string; description: string; canonical: string; bo
 <meta property="og:url" content="${esc(opts.canonical)}">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="${FAVICON}">
-<style>${STYLE}</style></head><body>
+<style>${STYLE}</style>${ANALYTICS}</head><body>
 <div class="wrap">
   <div class="cell head">
     <a class="brand" href="/">${MARK}MintPDF</a>
