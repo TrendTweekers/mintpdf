@@ -8,6 +8,8 @@
 
 No template editor. No template IDs. No dashboard. No signup to try.
 
+**[mintpdf.dev](https://mintpdf.dev)**
+
 [Try it](#quickstart) · [MCP setup](#use-it-from-claude-or-any-mcp-client) · [API](#api) · [Self-host](#self-host)
 
 </div>
