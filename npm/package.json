@@ -1,6 +1,6 @@
 {
   "name": "mintpdf-mcp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MCP server that turns HTML or Markdown into a styled PDF, or renders a public URL to PDF.",
   "type": "module",
   "bin": {
