@@ -4,7 +4,7 @@ import katex from "katex";
 import { createRequire } from "node:module";
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { assertPublicUrl, isPrivateHost } from "./ssrf.js";
+import { assertPublicUrl, isAllowedRequestUrl } from "./ssrf.js";
 
 const require_ = createRequire(import.meta.url);
 const katexDir = join(dirname(require_.resolve("katex/package.json")), "dist");
@@ -256,16 +256,21 @@ async function renderPage(
     // remote HTML can embed <img src="http://169.254..."> just as easily as a URL target can redirect there.
     await page.setRequestInterception(true);
     page.on("request", (req) => {
-      try {
-        const u = new URL(req.url());
-        if (u.protocol === "file:" || isPrivateHost(u.hostname)) {
-          void req.abort();
-          return;
+      // Async on purpose: the destination is resolved at request time rather than trusted from the
+      // hostname. That closes the DNS-rebinding window, where a short-TTL record can answer public
+      // when the URL is validated and private a moment later when Chromium actually fetches it.
+      void (async () => {
+        try {
+          if (await isAllowedRequestUrl(req.url())) await req.continue();
+          else await req.abort();
+        } catch {
+          // The request can be gone by the time the lookup returns, and aborting a dead request
+          // throws. Nothing useful to do but swallow it.
+          try {
+            await req.abort();
+          } catch {}
         }
-      } catch {
-        // data: and about: URLs land here; they are safe to allow
-      }
-      void req.continue();
+      })();
     });
 
     await setup(page);

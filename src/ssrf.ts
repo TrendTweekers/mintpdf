@@ -9,9 +9,63 @@ const PRIVATE_V4 = [
 function isPrivateIp(ip: string): boolean {
   if (isIP(ip) === 6) {
     const lower = ip.toLowerCase();
-    return lower === "::1" || lower.startsWith("fe80:") || lower.startsWith("fc") || lower.startsWith("fd") || lower.startsWith("::ffff:127.");
+    // An IPv4-mapped address carries a v4 address inside a v6 one, so ::ffff:10.0.0.1 must be
+    // judged by the v4 rules. Checking only ::ffff:127. would have let the whole RFC1918 range and
+    // the cloud metadata address through in mapped form.
+    const mapped = lower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    if (mapped) return PRIVATE_V4.some((re) => re.test(mapped[1]));
+    return (
+      lower === "::" ||
+      lower === "::1" ||
+      lower.startsWith("fe80:") ||
+      lower.startsWith("fc") ||
+      lower.startsWith("fd")
+    );
   }
   return PRIVATE_V4.some((re) => re.test(ip));
+}
+
+/**
+ * Whether a URL Chromium is about to fetch may proceed.
+ *
+ * The page-level check cannot rely on hostnames alone. Validation resolves the submitted URL once,
+ * but Chromium resolves again when it actually fetches, so a record with a short TTL could answer
+ * public at validation and private at fetch. Resolving here, at request time, closes that window:
+ * whatever the name says, the address is checked immediately before the request is allowed.
+ *
+ * Fails closed. A name that will not resolve is refused rather than passed through.
+ */
+const resolveCache = new Map<string, { private: boolean; at: number }>();
+const RESOLVE_TTL_MS = 30_000;
+
+export async function isAllowedRequestUrl(raw: string): Promise<boolean> {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return true; // data: and about: are parsed elsewhere or harmless
+  }
+
+  // Allowlist rather than blocklist: ftp:, ws:, chrome-extension: and friends have no business here.
+  if (url.protocol === "data:" || url.protocol === "about:" || url.protocol === "blob:") return true;
+  if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+
+  const host = url.hostname.toLowerCase();
+  if (isPrivateHost(host)) return false;
+  if (isIP(host)) return !isPrivateIp(host);
+
+  const hit = resolveCache.get(host);
+  if (hit && Date.now() - hit.at < RESOLVE_TTL_MS) return !hit.private;
+
+  let isPrivate: boolean;
+  try {
+    const addrs = await lookup(host, { all: true });
+    isPrivate = addrs.length === 0 || addrs.some((a) => isPrivateIp(a.address));
+  } catch {
+    isPrivate = true;
+  }
+  resolveCache.set(host, { private: isPrivate, at: Date.now() });
+  return !isPrivate;
 }
 
 export function isPrivateHost(hostname: string): boolean {
