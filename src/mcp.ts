@@ -43,7 +43,24 @@ function pdfResult(pdf: Buffer, baseUrl: string) {
 }
 
 export function buildMcpServer(baseUrl: string): McpServer {
-  const server = new McpServer({ name: "mintpdf", version: "0.1.0" });
+  // Directories and clients render whatever `initialize` reports, so a bare name is how a listing
+  // ends up titled "mintpdf" with no description. `title` is the human-facing label and
+  // `instructions` is what a client shows to explain the server, so both are worth filling in.
+  const server = new McpServer(
+    {
+      name: "mintpdf",
+      title: "MintPDF",
+      version: "0.1.2",
+    },
+    {
+      instructions:
+        "Turn Markdown or HTML into a styled PDF, or render any public web page, and get back a " +
+        "download link valid for one hour. Page breaks are handled: tables and code blocks are not " +
+        "sliced across pages, table headers repeat, and headings are not stranded at the foot of a " +
+        "page. Use generate_pdf for content you already have, and pdf_from_url for a live page. " +
+        "Works with no API key for light use; a free key at https://mintpdf.dev raises the limit.",
+    },
+  );
 
   server.registerTool(
     "generate_pdf",
