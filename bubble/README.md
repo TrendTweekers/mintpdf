@@ -1,7 +1,14 @@
 # MintPDF for Bubble
 
-A Bubble plugin wrapping the MintPDF API: Markdown or HTML in, finished PDF out, saved straight into
-the app's own file storage.
+A Bubble plugin wrapping the MintPDF API: Markdown or HTML in, finished PDF out.
+
+> **Measured constraint.** A v4 server-side action receives
+> `context = {currentUser, userTimezone, keys, isBubbleThing, isBubbleList, getThingById,`
+> `getThingsById, v3}` and `context.v3 = {request, async}`. **There is no file upload API.**
+> `uploadContent` is client-side only. Storing the PDF in the app's own file storage therefore
+> cannot be done from a server-side action, so the actions return the hosted MintPDF link, valid for
+> one hour. Restoring permanent storage needs a different mechanism (a client-side action, or longer
+> retention for plugin users) and is an open product question, not a bug.
 
 ## Why this exists, and why it is free
 
