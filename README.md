@@ -171,7 +171,30 @@ docker run -p 3000:3000 -e BASE_URL=http://localhost:3000 mintpdf
 
 Environment: `BASE_URL` (used in download links), `DATA_DIR` (defaults to `/tmp/mintpdf`; mount a
 volume to persist keys), `ANON_DAILY_LIMIT`, `FREE_MONTHLY_LIMIT`, `SOLO_MONTHLY_LIMIT`,
-`TEAM_MONTHLY_LIMIT`, `SCALE_MONTHLY_LIMIT`, `OVERAGE_FACTOR`.
+`TEAM_MONTHLY_LIMIT`, `SCALE_MONTHLY_LIMIT`, `OVERAGE_FACTOR`, `RENDER_CONCURRENCY`,
+`RENDER_QUEUE`, `RENDER_QUEUE_WAIT_MS`.
+
+### Load and admission control
+
+Every render is a Chromium tab, so **memory bounds concurrency long before CPU or cost does**.
+Unbounded, a traffic spike opens a tab per request until the OOM reaper kills the container and
+every request fails, including ones nearly finished. Measured here: 30 concurrent renders with no
+gate left 30 orphaned Chrome processes and an unusable machine.
+
+`RENDER_CONCURRENCY` renders run at once, `RENDER_QUEUE` more may wait, and anything beyond that is
+refused immediately with **503 and a `Retry-After`** rather than being allowed to pile up. Turning
+some callers away in under a second is strictly better than serving everyone a timeout.
+
+Code defaults are conservative (3 and 20). Measured on one small Railway instance at 10 and 70:
+
+| Burst | Served | Refused | Median | Wall clock | Instance after |
+|---|---|---|---|---|---|
+| 45 | 45 | 0 | 1.5s | 2.3s | healthy |
+| 120 | 81 | 39 | 3.0s | 4.0s | healthy |
+| 250 | 80 | 170 | 3.4s | 4.4s | healthy, 0.24s homepage |
+
+Roughly 18 renders a second sustained, with the refused share answered in under 2.7s. Raise the
+numbers only against a measurement on your own instance size, never on hope.
 
 If you want a fuller self-hosted PDF toolchain (Office formats, merging, splitting),
 [Gotenberg](https://gotenberg.dev) is excellent and does more than this does.
