@@ -247,6 +247,13 @@ BASE=https://mintpdf.dev node scratchpad/ssrf_suite.mjs
 It checks the bypasses above *and* that ordinary rendering still works, because a guard that also
 blocks web fonts is a different bug rather than a fix.
 
+The IPv6 parser has its own table of adversarial literals, since an invalid string silently becoming
+a valid address is the failure that matters in this kind of code:
+
+```bash
+node scratchpad/ipv6_table_test.mjs
+```
+
 **Download links** use a `crypto.randomUUID()` identifier and are **not authenticated**: anyone with
 the link can fetch the file for the hour it exists. That is deliberate, so a link can be emailed or
 handed to a browser, but it means the link is the secret.

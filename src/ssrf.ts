@@ -14,42 +14,52 @@ const PRIVATE_V4 = [
  * two ways. Comparing text would catch one and miss the other. Working from the bytes makes the
  * spelling irrelevant.
  */
-function ipv6Bytes(ip: string): number[] | null {
+export function ipv6Bytes(ip: string): number[] | null {
   let s = ip.toLowerCase();
   if (s.startsWith("[") && s.endsWith("]")) s = s.slice(1, -1);
-  s = s.split("%")[0]; // drop any zone index
 
-  let tail: number[] = [];
-  const dotted = s.match(/(\d+\.\d+\.\d+\.\d+)$/);
-  if (dotted) {
-    const parts = dotted[1].split(".").map(Number);
-    if (parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
-    tail = parts;
-    s = s.slice(0, s.length - dotted[1].length).replace(/:$/, "") || "::";
+  // Zone indices are rejected rather than stripped. Node accepts fe80::1%eth0 as valid IPv6, but a
+  // scoped address is not a thing a web page should be fetching, and stripping the suffix would let
+  // malformed input become a valid address.
+  if (s.includes("%")) return null;
+
+  // Normalise a trailing dotted quad into two hextets, so the rest of the parser only has to deal
+  // with hex. Anchoring both ends is what rejects ::ffff:1.2.3.4.5, ::ffff:1.2.3 and ::ffff:1.2.3.4x,
+  // which a suffix-only match would happily accept by consuming part of the address.
+  if (s.includes(".")) {
+    const m = s.match(/^(.*:)(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!m) return null;
+    const q = [m[2], m[3], m[4], m[5]].map(Number);
+    if (q.some((n) => n > 255)) return null;
+    s = m[1] + (((q[0] << 8) | q[1]).toString(16) + ":" + ((q[2] << 8) | q[3]).toString(16));
   }
 
   const halves = s.split("::");
   if (halves.length > 2) return null;
-  const toWords = (part: string) =>
-    part
-      .split(":")
-      .filter((x) => x !== "")
-      .map((x) => parseInt(x, 16));
-  const head = toWords(halves[0] ?? "");
-  const rest = halves.length === 2 ? toWords(halves[1]) : [];
-  if ([...head, ...rest].some((n) => !Number.isInteger(n) || n < 0 || n > 0xffff)) return null;
 
-  const bytesOf = (words: number[]) => words.flatMap((w) => [(w >> 8) & 0xff, w & 0xff]);
-  const headB = bytesOf(head);
-  const restB = [...bytesOf(rest), ...tail];
-  const total = 16;
+  // parseInt is not a validator: it takes a valid prefix and ignores the rest, so "1g" becomes 1.
+  // Each hextet is checked before it is parsed.
+  const toWords = (part: string): number[] | null => {
+    if (part === "") return [];
+    const pieces = part.split(":");
+    if (pieces.some((x) => !/^[0-9a-f]{1,4}$/.test(x))) return null;
+    return pieces.map((x) => parseInt(x, 16));
+  };
+
+  const head = toWords(halves[0]);
+  const rest = halves.length === 2 ? toWords(halves[1]) : [];
+  if (head === null || rest === null) return null;
+
+  let words: number[];
   if (halves.length === 2) {
-    const fill = total - headB.length - restB.length;
+    const fill = 8 - head.length - rest.length;
     if (fill < 0) return null;
-    return [...headB, ...Array(fill).fill(0), ...restB];
+    words = [...head, ...Array(fill).fill(0), ...rest];
+  } else {
+    if (head.length !== 8) return null;
+    words = head;
   }
-  const all = [...headB, ...restB];
-  return all.length === total ? all : null;
+  return words.flatMap((w) => [(w >> 8) & 0xff, w & 0xff]);
 }
 
 function isPrivateIp(ip: string): boolean {
@@ -72,7 +82,9 @@ function isPrivateIp(ip: string): boolean {
     // offsets 1-3, not 0-2. Blocked outright rather than unwrapping the embedded v4, because a
     // NAT64 address has no business appearing in a document we are asked to render.
     if (b[0] === 0x00 && b[1] === 0x64 && b[2] === 0xff && b[3] === 0x9b) return true;
-    if (b[0] === 0x20 && b[1] === 0x01 && b[2] === 0x00) return true; // 2001:0::/32 Teredo
+    // Teredo is 2001:0000::/32, so all four bytes must match. Checking only three blocks
+    // 2001:0001::/32 and everything else under 2001:00xx, which are ordinary public addresses.
+    if (b[0] === 0x20 && b[1] === 0x01 && b[2] === 0x00 && b[3] === 0x00) return true;
     return false;
   }
   return PRIVATE_V4.some((re) => re.test(bare));
