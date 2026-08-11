@@ -24,7 +24,8 @@ like a document rather than a text file.
   and footers that actually inherit your styling. See [How it works](#how-it-works).
 - **MCP native** — `generate_pdf` and `pdf_from_url` over streamable HTTP, so an agent can produce a
   document mid-conversation.
-- **Nothing is kept** — files are deleted after an hour. No document storage, no account needed.
+- **Documents aren't kept** — rendered files are deleted after an hour, and their contents are
+  never logged. Keys, emails and usage counters obviously are stored. See [Security](#security).
 - **Run it yourself** — MIT, with a published image. The hosted service exists so you don't have to
   operate Chromium, not because the renderer is secret.
 
@@ -217,14 +218,25 @@ matter more than they would for a static converter.
    request time**, then blocked if private. This covers embedded images, stylesheets, fonts,
    redirects and `fetch()` from submitted JavaScript, not just the URL you asked for.
 
-The second layer resolves rather than trusting the hostname, which is what closes the gap between
-validation and fetch that a short-TTL DNS record would otherwise open. Unresolvable names fail
-closed.
+The second layer resolves rather than trusting the hostname, and **caches only refusals, never
+approvals**: caching "this host is public" would reopen the exact hole the check exists to close.
+Unresolvable names fail closed.
+
+Being precise about what that does and does not achieve: a DNS-rebinding attempt can no longer wait
+out a cached approval, so it has to win a race between this lookup and Chromium's own, on every
+request. That is a much narrower target than a fixed window, but it is a narrowed race rather than a
+closed door. Eliminating it entirely means pinning the resolved address at the socket layer, which
+is not implemented.
 
 Blocked: loopback, `0.0.0.0`, RFC1918, CGNAT (100.64/10), link-local and cloud metadata
-(169.254.169.254), IPv6 loopback and ULA, **IPv4-mapped forms** such as `::ffff:10.0.0.1`,
-`localhost`/`.local`/`.internal` names, any public hostname that resolves to a private address, and
-every scheme except http, https, data and blob.
+(169.254.169.254); IPv6 loopback, unspecified, link-local, site-local, unique-local, multicast,
+NAT64 and Teredo; **IPv4-mapped and IPv4-compatible forms in either spelling**, so `::ffff:10.0.0.1`
+and `::ffff:a00:1` are the same address and both are refused; `localhost`/`.local`/`.internal`
+names; any public hostname that resolves to a private address; and every scheme except http, https,
+data and blob.
+
+Addresses are judged from their bytes rather than by matching text, because the same address has
+many spellings and a text match catches one and misses the rest.
 
 There is a test suite for exactly this, and it is meant to be run rather than trusted:
 

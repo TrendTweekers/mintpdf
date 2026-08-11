@@ -25,9 +25,20 @@ const blocked = [
   ["RFC1918 172.16/12", { url: "http://172.16.0.1/" }],
   ["CGNAT 100.64/10", { url: "http://100.100.100.100/" }],
   ["IPv6 loopback", { url: "http://[::1]/" }],
+  ["IPv6 unspecified", { url: "http://[::]/" }],
   ["IPv6 ULA", { url: "http://[fd00::1]/" }],
+  ["IPv6 link-local", { url: "http://[fe80::1]/" }],
+  ["IPv6 site-local (deprecated)", { url: "http://[fec0::1]/" }],
+  ["IPv6 multicast", { url: "http://[ff02::1]/" }],
   ["IPv4-mapped RFC1918", { url: "http://[::ffff:10.0.0.1]/" }],
   ["IPv4-mapped metadata", { url: "http://[::ffff:169.254.169.254]/" }],
+  // The same addresses spelled in hex. Text matching catches the dotted form and misses these,
+  // which is exactly the bug an audit found in the first version of this check.
+  ["IPv4-mapped loopback, hex", { url: "http://[::ffff:7f00:1]/" }],
+  ["IPv4-mapped metadata, hex", { url: "http://[::ffff:a9fe:a9fe]/" }],
+  ["IPv4-mapped RFC1918, hex", { url: "http://[::ffff:a00:1]/" }],
+  ["IPv4-compatible loopback", { url: "http://[::7f00:1]/" }],
+  ["NAT64 prefix", { url: "http://[64:ff9b::7f00:1]/" }],
   ["localhost name", { url: "http://localhost/" }],
   [".internal name", { url: "http://pdfmint.railway.internal/" }],
   ["public name -> loopback", { url: "http://localtest.me/" }],
@@ -37,10 +48,20 @@ const blocked = [
   ["ftp scheme", { url: "ftp://example.com/" }],
 ];
 
+// A guard that also breaks ordinary rendering is a different bug, not a fix. These must all work.
 const allowed = [
   ["plain markdown", { markdown: "# ok" }],
   ["public URL", { url: "https://example.com/" }],
   ["html embedding a blocked resource", { html: '<h1>ok</h1><img src="http://169.254.169.254/x">' }],
+  [
+    "remote web font still embeds",
+    {
+      html:
+        "<html><head><style>@import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');" +
+        "body{font-family:'Lobster',cursive;font-size:40px}</style></head><body><p>Font</p></body></html>",
+    },
+    (buf) => buf.includes(Buffer.from("Lobster")),
+  ],
 ];
 
 let pass = 0;
@@ -61,12 +82,13 @@ for (const [label, body] of blocked) {
   console.log(`  ${ok ? "BLOCKED" : "LEAK!! "}  ${label.padEnd(26)} ${detail}`);
 }
 
-for (const [label, body] of allowed) {
+for (const [label, body, extra] of allowed) {
   const res = await fetch(`${BASE}/v1/pdf`, { method: "POST", headers, body: JSON.stringify(body) });
   const buf = Buffer.from(await res.arrayBuffer());
-  const ok = res.status === 200 && buf.subarray(0, 5).toString() === "%PDF-";
+  const ok =
+    res.status === 200 && buf.subarray(0, 5).toString() === "%PDF-" && (!extra || extra(buf));
   if (ok) pass++;
-  console.log(`  ${ok ? "ALLOWED" : "BROKEN "}  ${label.padEnd(26)} ${res.status} ${buf.length}b`);
+  console.log(`  ${ok ? "ALLOWED" : "BROKEN "}  ${label.padEnd(30)} ${res.status} ${buf.length}b`);
 }
 
 console.log(`\n  ${pass}/${total} correct`);
