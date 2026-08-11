@@ -3,16 +3,14 @@
  *
  * GENERATED FILE. Edit scratchpad/gen_bubble.py and regenerate, do not hand-edit.
  *
- * Paste this into the plugin editor's code box for the action. It has to be self-contained: Bubble
- * gives each action its own sandbox, so the helpers below are duplicated across the three actions on
- * purpose rather than factored out.
+ * Written for Plugin API v4 (Node 22): an async function using native fetch. Do not reintroduce
+ * context.async or context.request; v4 removed Fibers and both are deprecated behind context.v3.
  *
- * Design note. By default this uploads the finished PDF into the Bubble app's own file storage and
- * returns a permanent URL. Every incumbent PDF plugin either hands back a temporary link or an
- * image-based render, and the resulting dead links are a large part of why the category leaders sit
- * at 3.5 stars. Storing the file where the app already keeps its files is what a Bubble user expects.
+ * By default the finished PDF is uploaded into the Bubble app's own file storage and a permanent
+ * URL is returned. The incumbent PDF plugins hand back links that expire or image-based renders,
+ * and the resulting dead links are a large part of why the category leaders sit at 3.5 stars.
  */
-function (properties, context) {
+async function (properties, context) {
   var apiKey = (context.keys && context.keys.api_key) || "";
 
   var payload = { html: properties.html };
@@ -29,44 +27,65 @@ function (properties, context) {
 
   var headers = { "Content-Type": "application/json" };
   // Only send the header when a key exists. Without one the API still works on its anonymous tier
-  // (10 renders a day per IP), so someone can try the plugin before signing up for anything.
+  // (10 renders a day per IP), so the plugin can be tried before anyone signs up for anything.
   if (apiKey) headers.Authorization = "Bearer " + apiKey;
 
-  function callApi(bodyObject, wantBytes) {
-    return context.async(function (callback) {
-      var options = {
-        method: "POST",
-        uri: "https://mintpdf.dev/v1/pdf",
-        headers: headers,
-        body: JSON.stringify(bodyObject),
-      };
-      // encoding null gives us a Buffer. Never combine it with json:true, which would try to parse
-      // the PDF bytes as JSON and hand back mangled output.
-      if (wantBytes) options.encoding = null;
-      context.request(options, function (err, response, body) {
-        if (err) return callback(err);
-        callback(null, { status: response.statusCode, body: body });
-      });
+  async function callApi(bodyObject) {
+    return await fetch("https://mintpdf.dev/v1/pdf", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(bodyObject),
     });
   }
 
-  function describeFailure(res) {
+  async function describeFailure(res) {
     var detail = "";
     try {
-      detail = JSON.parse(res.body.toString("utf8")).error || "";
+      var text = await res.text();
+      try {
+        detail = JSON.parse(text).error || text.slice(0, 200);
+      } catch (e) {
+        detail = text.slice(0, 200);
+      }
     } catch (e) {
-      detail = res.body ? String(res.body).slice(0, 200) : "";
+      detail = "";
     }
     if (res.status === 429) {
-      return (
-        "MintPDF: render limit reached. Add a free API key under Plugins, MintPDF, to raise it. " +
-        detail
-      );
+      return "MintPDF: render limit reached. Add a free API key under Plugins, MintPDF, to raise it. " + detail;
     }
     if (res.status === 401 || res.status === 403) {
       return "MintPDF: the API key in the plugin settings was rejected. " + detail;
     }
     return "MintPDF: render failed (HTTP " + res.status + "). " + detail;
+  }
+
+  // uploadContent is callback-based in older docs and promise-based in newer ones, and the version
+  // is not documented for v4. Pass a callback AND honour a returned thenable, so one upload happens
+  // either way rather than guessing and uploading twice or hanging forever.
+  function uploadContent(name, base64) {
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var maybe = context.uploadContent(name, base64, function (err, url) {
+        if (settled) return;
+        settled = true;
+        if (err) reject(err);
+        else resolve(url);
+      });
+      if (maybe && typeof maybe.then === "function") {
+        maybe.then(
+          function (url) {
+            if (settled) return;
+            settled = true;
+            resolve(url);
+          },
+          function (err) {
+            if (settled) return;
+            settled = true;
+            reject(err);
+          },
+        );
+      }
+    });
   }
 
   // A link was asked for rather than a stored file, so let the API produce it directly instead of
@@ -78,16 +97,16 @@ function (properties, context) {
   if (properties.temporary_link === true) {
     var linkPayload = JSON.parse(JSON.stringify(payload));
     linkPayload.output = "url";
-    var linkRes = callApi(linkPayload, false);
-    if (linkRes.status !== 200) throw new Error(describeFailure(linkRes));
-    var parsed = JSON.parse(linkRes.body);
+    var linkRes = await callApi(linkPayload);
+    if (!linkRes.ok) throw new Error(await describeFailure(linkRes));
+    var parsed = await linkRes.json();
     return { url: parsed.download_url, size_bytes: parsed.size_bytes || 0, saved_to_bubble: false };
   }
 
-  var res = callApi(payload, true);
-  if (res.status !== 200) throw new Error(describeFailure(res));
+  var res = await callApi(payload);
+  if (!res.ok) throw new Error(await describeFailure(res));
 
-  var pdf = res.body;
+  var pdf = Buffer.from(await res.arrayBuffer());
   var sizeBytes = pdf.length;
 
   // Bubble base64-encodes uploads, inflating them by about 4/3, and its guidance is to stay under
@@ -104,9 +123,7 @@ function (properties, context) {
   var name = properties.filename || "document.pdf";
   if (name.slice(-4).toLowerCase() !== ".pdf") name = name + ".pdf";
 
-  var storedUrl = context.async(function (callback) {
-    context.uploadContent(name, pdf.toString("base64"), callback);
-  });
+  var storedUrl = await uploadContent(name, pdf.toString("base64"));
 
   return { url: storedUrl, size_bytes: sizeBytes, saved_to_bubble: true };
 }

@@ -75,8 +75,13 @@ Returned values on every action:
 | `size_bytes` | Number |
 | `saved_to_bubble` | Checkbox |
 
-No npm dependencies are needed. The actions use `context.request`, `context.async` and
-`context.uploadContent`, all provided by the platform.
+No npm dependencies are needed.
+
+**These actions target Plugin API v4 (Node 22).** v4 dropped the Fibers extension, so `context.async`
+and `context.request` no longer exist at the top level: they are deprecated behind `context.v3.*`.
+The actions are plain `async function`s using native `fetch`. Writing against the older callback API
+fails at runtime with `TypeError: context.async is not a function`, which is how this was caught, in
+Bubble, after the harness had wrongly passed it.
 
 ## Testing
 
@@ -86,9 +91,16 @@ The actions are exercised against the live API before release:
 node scratchpad/bubble_harness.mjs
 ```
 
-The harness fakes Bubble's `context` and, importantly, makes each HTTP call synchronously. Bubble's
-`context.async` only *looks* synchronous because their runtime uses fibers, so a naive async shim
-would test an ordering the platform never produces. Last run: 5/5, with valid multi-page PDFs.
+The harness now stubs only `context.uploadContent`, the one thing that exists solely inside Bubble.
+Every HTTP call is real. It runs the upload both callback-style and promise-style, because Bubble's
+own docs disagree on which `uploadContent` is and the action has to survive either. Last run: 7/7.
+
+Set `MINTPDF_KEY` when running it, or the anonymous 10-a-day limit will exhaust part way through and
+look like a code failure.
+
+An earlier version of this harness emulated the v3 fiber-backed `context.async`. It passed while the
+plugin was broken in Bubble, because it was reproducing an API the platform no longer has. A test
+that invents its own runtime proves nothing about the real one.
 
 ## Regenerating the actions
 
