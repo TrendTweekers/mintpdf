@@ -16,20 +16,23 @@ import { join } from "node:path";
 
 const work = mkdtempSync(join(tmpdir(), "bubble-"));
 
-function makeContext(apiKey, { promiseUpload = false } = {}) {
+function makeContext(apiKey, { promiseUpload = false, underV3 = false, noUpload = false } = {}) {
+  const upload = function (name, base64, cb) {
+    const bytes = Buffer.from(base64, "base64");
+    const path = join(work, name);
+    writeFileSync(path, bytes);
+    const url = `https://fake-bubble-storage.test/${name}`;
+    if (promiseUpload) return Promise.resolve(url);
+    cb(null, url);
+    return undefined;
+  };
+  if (noUpload) return { keys: { api_key: apiKey }, v3: { request() {} } };
+  if (underV3) return { keys: { api_key: apiKey }, v3: { uploadContent: upload } };
   return {
     keys: { api_key: apiKey },
-    // Exercised both ways across the cases below, because Bubble's docs disagree on whether this is
-    // callback-based or promise-based and the action has to survive either.
-    uploadContent(name, base64, cb) {
-      const bytes = Buffer.from(base64, "base64");
-      const path = join(work, name);
-      writeFileSync(path, bytes);
-      const url = `https://fake-bubble-storage.test/${name}`;
-      if (promiseUpload) return Promise.resolve(url);
-      cb(null, url);
-      return undefined;
-    },
+    // Exercised callback-style, promise-style and under context.v3 across the cases below, because
+    // Bubble's docs disagree and v4 does not document it at all.
+    uploadContent: upload,
   };
 }
 
@@ -58,6 +61,19 @@ const cases = [
     name: "Markdown, promise-style uploadContent",
     props: { markdown: "# Promise style", filename: "prom" },
     promiseUpload: true,
+  },
+  {
+    file: "action-markdown-to-pdf.js",
+    name: "Markdown, uploadContent only under context.v3",
+    props: { markdown: "# Under v3", filename: "v3" },
+    underV3: true,
+  },
+  {
+    file: "action-markdown-to-pdf.js",
+    name: "No uploadContent anywhere reports the real key list",
+    props: { markdown: "# Diagnose", filename: "diag" },
+    noUpload: true,
+    expectError: /no uploadContent on this Bubble runtime\. context keys: \[keys, v3\]/,
   },
   {
     file: "action-markdown-to-pdf.js",
@@ -93,7 +109,11 @@ const cases = [
 let pass = 0;
 for (const c of cases) {
   const action = load(c.file);
-  const ctx = makeContext(process.env.MINTPDF_KEY || "", { promiseUpload: c.promiseUpload });
+  const ctx = makeContext(process.env.MINTPDF_KEY || "", {
+    promiseUpload: c.promiseUpload,
+    underV3: c.underV3,
+    noUpload: c.noUpload,
+  });
   try {
     const out = await action(c.props, ctx);
     if (c.expectError) {

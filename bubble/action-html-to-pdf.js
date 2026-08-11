@@ -59,13 +59,39 @@ async function (properties, context) {
     return "MintPDF: render failed (HTTP " + res.status + "). " + detail;
   }
 
-  // uploadContent is callback-based in older docs and promise-based in newer ones, and the version
-  // is not documented for v4. Pass a callback AND honour a returned thenable, so one upload happens
-  // either way rather than guessing and uploading twice or hanging forever.
+  // v4 moved the deprecated v3 helpers under context.v3, and uploadContent is not documented for v4
+  // at all. Resolve it from either location rather than assuming, and if it is genuinely absent say
+  // so with the actual key list attached, so the next run identifies the real name instead of
+  // prompting another guess.
+  function resolveUpload() {
+    if (typeof context.uploadContent === "function") return context.uploadContent.bind(context);
+    if (context.v3 && typeof context.v3.uploadContent === "function")
+      return context.v3.uploadContent.bind(context.v3);
+    var keys = [];
+    try {
+      keys = Object.keys(context);
+    } catch (e) {}
+    var v3keys = [];
+    try {
+      v3keys = context.v3 ? Object.keys(context.v3) : [];
+    } catch (e) {}
+    throw new Error(
+      "MintPDF: no uploadContent on this Bubble runtime. context keys: [" +
+        keys.join(", ") +
+        "]. context.v3 keys: [" +
+        v3keys.join(", ") +
+        "].",
+    );
+  }
+
+  // Callback-based in the older docs, promise-based in newer ones, undocumented in v4. Pass a
+  // callback AND honour a returned thenable, so exactly one upload happens either way rather than
+  // uploading twice or hanging forever.
   function uploadContent(name, base64) {
+    var upload = resolveUpload();
     return new Promise(function (resolve, reject) {
       var settled = false;
-      var maybe = context.uploadContent(name, base64, function (err, url) {
+      var maybe = upload(name, base64, function (err, url) {
         if (settled) return;
         settled = true;
         if (err) reject(err);
