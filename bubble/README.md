@@ -46,18 +46,21 @@ below plus its own source field.
 | Generate PDF from HTML | `html` (Text, long) | [`action-html-to-pdf.js`](action-html-to-pdf.js) |
 | Generate PDF from a web page | `url` (Text) | [`action-url-to-pdf.js`](action-url-to-pdf.js) |
 
-Shared fields on every action:
+Shared fields on every action. **v1 ships only the first four.** The code reads every optional
+property defensively, so the rest can be added in a later version without touching it, and an absent
+`save_to_bubble` correctly defaults to storing the file. Each field costs a dropdown interaction in
+their editor, and nobody installs a PDF plugin because it supports A3.
 
-| Key | Type | Default | Notes |
-|---|---|---|---|
-| `filename` | Text | `document.pdf` | `.pdf` is appended if missing |
-| `save_to_bubble` | Checkbox | checked | Off returns a MintPDF link valid one hour instead |
-| `page_numbers` | Checkbox | unchecked | Adds `3 / 7` to the footer |
-| `header_text` | Text | empty | Small running text on every page |
-| `footer_text` | Text | empty | |
-| `format` | Text | empty | `A4`, `Letter`, `Legal`, `A3`, `A5` |
-| `landscape` | Checkbox | unchecked | |
-| `margin` | Text | empty | All sides, e.g. `18mm` |
+| Key | Type | Default | v1 | Notes |
+|---|---|---|---|---|
+| `filename` | Text | `document.pdf` | yes | `.pdf` is appended if missing |
+| `save_to_bubble` | Checkbox | checked | yes | Off returns a MintPDF link valid one hour instead |
+| `page_numbers` | Checkbox | unchecked | yes | Adds `3 / 7` to the footer |
+| `header_text` | Text | empty | later | Small running text on every page |
+| `footer_text` | Text | empty | later | |
+| `format` | Text | empty | later | `A4`, `Letter`, `Legal`, `A3`, `A5` |
+| `landscape` | Checkbox | unchecked | later | |
+| `margin` | Text | empty | later | All sides, e.g. `18mm` |
 
 Returned values on every action:
 
