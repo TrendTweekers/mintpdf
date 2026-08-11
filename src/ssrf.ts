@@ -83,8 +83,10 @@ function isPrivateIp(ip: string): boolean {
  *
  * The page-level check cannot rely on hostnames alone. Validation resolves the submitted URL once,
  * but Chromium resolves again when it actually fetches, so a record with a short TTL could answer
- * public at validation and private at fetch. Resolving here, at request time, closes that window:
- * whatever the name says, the address is checked immediately before the request is allowed.
+ * public at validation and private at fetch. Resolving here, immediately before the request is
+ * allowed, narrows that to a race between this lookup and Chromium's own, rather than a window an
+ * attacker can wait out. It does not eliminate it: closing it fully means pinning the resolved
+ * address at the socket layer, which is not implemented.
  *
  * Fails closed. A name that will not resolve is refused rather than passed through.
  */
