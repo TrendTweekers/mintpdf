@@ -1,6 +1,6 @@
 {
   "name": "mintpdf-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server that turns HTML or Markdown into a styled PDF, or renders a public URL to PDF.",
   "type": "module",
   "bin": {
@@ -25,7 +25,7 @@
   ],
   "license": "MIT",
   "author": "TrendTweekers",
-  "homepage": "https://github.com/TrendTweekers/mintpdf",
+  "homepage": "https://mintpdf.dev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TrendTweekers/mintpdf.git",

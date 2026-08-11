@@ -4,6 +4,8 @@ MCP server that turns **HTML or Markdown into a styled PDF**, or renders a publi
 returns a download link. Markdown ships with a clean default stylesheet, so agent-written documents
 look right without any design work.
 
+Home: **[mintpdf.dev](https://mintpdf.dev)**
+
 ## Install
 
 ```json
