@@ -71,7 +71,11 @@ function (properties, context) {
 
   // A link was asked for rather than a stored file, so let the API produce it directly instead of
   // uploading bytes we would then throw away. The link is valid for one hour.
-  if (properties.save_to_bubble === false) {
+  //
+  // Deliberately opt-IN. Bubble offers no per-field default, so an unticked checkbox arrives as
+  // false; phrasing this as "save_to_bubble" would have made the temporary link the default, which
+  // is the opposite of the behaviour that makes this plugin worth installing.
+  if (properties.temporary_link === true) {
     var linkPayload = JSON.parse(JSON.stringify(payload));
     linkPayload.output = "url";
     var linkRes = callApi(linkPayload, false);
@@ -92,8 +96,8 @@ function (properties, context) {
     throw new Error(
       "MintPDF: the rendered PDF is " +
         Math.round(sizeBytes / 1024 / 1024) +
-        "MB, above Bubble's 5MB practical limit for stored files. Split the document, or switch " +
-        '"Save to Bubble storage" off to get a download link instead.',
+        "MB, above Bubble's 5MB practical limit for stored files. Split the document, or tick " +
+        '"Return a temporary link instead" to get a download link.',
     );
   }
 

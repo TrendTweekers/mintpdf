@@ -46,6 +46,11 @@ below plus its own source field.
 | Generate PDF from HTML | `html` (Text, long) | [`action-html-to-pdf.js`](action-html-to-pdf.js) |
 | Generate PDF from a web page | `url` (Text) | [`action-url-to-pdf.js`](action-url-to-pdf.js) |
 
+**`temporary_link` is deliberately opt-in rather than a `save_to_bubble` opt-out.** Bubble offers no
+per-field default, so an unticked checkbox arrives as `false`. Phrasing it the other way round would
+have made the expiring link the default, which is the opposite of the behaviour that makes this
+plugin worth installing.
+
 Shared fields on every action. **v1 ships only the first four.** The code reads every optional
 property defensively, so the rest can be added in a later version without touching it, and an absent
 `save_to_bubble` correctly defaults to storing the file. Each field costs a dropdown interaction in
@@ -54,7 +59,7 @@ their editor, and nobody installs a PDF plugin because it supports A3.
 | Key | Type | Default | v1 | Notes |
 |---|---|---|---|---|
 | `filename` | Text | `document.pdf` | yes | `.pdf` is appended if missing |
-| `save_to_bubble` | Checkbox | checked | yes | Off returns a MintPDF link valid one hour instead |
+| `temporary_link` | Checkbox | unchecked | yes | Tick to get a MintPDF link valid one hour instead of a stored file |
 | `page_numbers` | Checkbox | unchecked | yes | Adds `3 / 7` to the footer |
 | `header_text` | Text | empty | later | Small running text on every page |
 | `footer_text` | Text | empty | later | |
