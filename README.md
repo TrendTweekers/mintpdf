@@ -10,22 +10,23 @@ No template editor. No template IDs. No dashboard. No signup to try.
 
 **[mintpdf.dev](https://mintpdf.dev)**
 
-[Try it](#quickstart) · [MCP setup](#use-it-from-claude-or-any-mcp-client) · [API](#api) · [Self-host](#self-host)
+[Try it](#quickstart) · [MCP setup](#use-it-from-claude-or-any-mcp-client) · [API](#api) · [Self-host](#self-host) · [Security](#security) · [Limitations](#limitations)
 
 </div>
 
 ---
 
-Agents write Markdown. People need documents. MintPDF is the missing step: send HTML or Markdown,
-get a clean PDF back, from your code or straight from an AI agent via MCP.
+Send HTML or Markdown, get a PDF back. It is Chromium under the hood, with the print CSS already
+worked out so tables don't split across pages, table headers repeat, and Markdown comes out looking
+like a document rather than a text file.
 
-- **MCP native** — `generate_pdf` and `pdf_from_url` over streamable HTTP. Claude can render a
+- **Pagination is the point.** `break-inside`, repeating `thead`, orphans and widows, and headers
+  and footers that actually inherit your styling. See [How it works](#how-it-works).
+- **MCP native** — `generate_pdf` and `pdf_from_url` over streamable HTTP, so an agent can produce a
   document mid-conversation.
-- **Markdown looks right by default** — tables, code blocks, blockquotes and headings come out
-  styled, so agent-written documents don't look like a text file.
-- **No templates** — your code or your agent already produced the content; skip the template step.
-- **Nothing is kept** — generated files auto-delete after one hour, no document storage, no account
-  needed to try it.
+- **Nothing is kept** — files are deleted after an hour. No document storage, no account needed.
+- **Run it yourself** — MIT, with a published image. The hosted service exists so you don't have to
+  operate Chromium, not because the renderer is secret.
 
 ## Quickstart
 
@@ -199,11 +200,81 @@ numbers only against a measurement on your own instance size, never on hope.
 If you want a fuller self-hosted PDF toolchain (Office formats, merging, splitting),
 [Gotenberg](https://gotenberg.dev) is excellent and does more than this does.
 
+## Security
+
+This service renders HTML and URLs supplied by anyone, so the interesting questions are about what
+that content can reach.
+
+**Submitted HTML executes JavaScript.** It has to: Mermaid diagrams and KaTeX maths are rendered in
+the page. Treat the renderer as running untrusted code, which is why the network restrictions below
+matter more than they would for a static converter.
+
+**SSRF is blocked at two layers.**
+
+1. A submitted `url` is parsed, restricted to `http`/`https`, and resolved. If *any* resolved address
+   is private, the request is refused with a 400 before a browser is involved.
+2. Independently, every request Chromium makes is intercepted and the destination **resolved again at
+   request time**, then blocked if private. This covers embedded images, stylesheets, fonts,
+   redirects and `fetch()` from submitted JavaScript, not just the URL you asked for.
+
+The second layer resolves rather than trusting the hostname, which is what closes the gap between
+validation and fetch that a short-TTL DNS record would otherwise open. Unresolvable names fail
+closed.
+
+Blocked: loopback, `0.0.0.0`, RFC1918, CGNAT (100.64/10), link-local and cloud metadata
+(169.254.169.254), IPv6 loopback and ULA, **IPv4-mapped forms** such as `::ffff:10.0.0.1`,
+`localhost`/`.local`/`.internal` names, any public hostname that resolves to a private address, and
+every scheme except http, https, data and blob.
+
+There is a test suite for exactly this, and it is meant to be run rather than trusted:
+
+```bash
+BASE=https://mintpdf.dev node scratchpad/ssrf_suite.mjs
+```
+
+It checks the bypasses above *and* that ordinary rendering still works, because a guard that also
+blocks web fonts is a different bug rather than a fix.
+
+**Download links** use a `crypto.randomUUID()` identifier and are **not authenticated**: anyone with
+the link can fetch the file for the hour it exists. That is deliberate, so a link can be emailed or
+handed to a browser, but it means the link is the secret.
+
+**Logging.** Request metadata is logged (method, path, status, duration). **Request bodies are never
+logged**, so the HTML and Markdown you send are not written anywhere except the temporary file. The
+analytics table stores event kind, path, referrer, country and a daily-salted hash of the IP. No
+document content, and no way to reconstruct a document from it.
+
+## Limitations
+
+Worth knowing before you build on it.
+
+- **Files are deleted after one hour.** There is no document library and no way to fetch a render
+  again later. Generate, use, done. If you need permanence, save the bytes on your side.
+- **No Office formats, merging or splitting.** This converts HTML, Markdown and web pages, and
+  nothing else. [Gotenberg](https://gotenberg.dev) is more mature and covers far more ground if you
+  are self-hosting and need that.
+- **One instance.** Keys and quotas live in SQLite on a mounted volume, so running several replicas
+  against one volume will not work. Horizontal scaling needs a real database first.
+- **Renders are admission-controlled.** Over capacity the API returns `503` with `Retry-After`
+  rather than queueing without limit. See the table above for measured behaviour.
+- **Two days old at the time of writing**, with no paying users yet.
+
 ## How it works
 
-TypeScript, Fastify, Puppeteer driving one shared Chromium (page per request), `node:sqlite` for keys
-and quotas so there are no native dependencies. Requests to private and internal addresses are blocked
-both at URL validation and at Chromium's request layer, so embedded resources can't reach them either.
+TypeScript, Fastify, and Puppeteer driving one shared Chromium with a page per request. `node:sqlite`
+holds keys, quotas and events, so there are no native dependencies to build.
+
+The parts that took the actual work are the unglamorous ones:
+
+- **Print CSS.** `break-inside: avoid` on tables, rows, list items, code blocks, blockquotes and
+  figures; `thead { display: table-header-group }` so headers repeat; `orphans`/`widows`;
+  `break-after: avoid` on headings so none is stranded at the foot of a page.
+- **Header and footer templates**, which are a separate document from your page: they ignore the page
+  CSS and render at near-zero font size unless the styles are inlined, and they sit outside the
+  content margins.
+- **Admission control**, because one Chromium tab per concurrent request is how the container runs
+  out of memory.
+- **Network isolation** for a renderer that executes untrusted JavaScript. See Security.
 
 ## Licence
 
