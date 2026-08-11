@@ -1,0 +1,63 @@
+# Publish the MCP registry entry from CI.
+#
+# The interactive `mcp-publisher login github` device flow treats GitHub's "slow_down" poll response
+# as fatal, so it fails intermittently no matter how quickly you authorise. OIDC avoids the flow
+# entirely: the workflow's identity token proves ownership of the io.github.TrendTweekers namespace,
+# with nothing to type and no long-lived credential to leak.
+name: MCP registry
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - server.json
+
+permissions:
+  id-token: write # required for OIDC
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check server.json against the published npm version
+        run: |
+          manifest=$(python3 -c "import json;print(json.load(open('server.json'))['version'])")
+          pkg=$(python3 -c "import json;print(json.load(open('npm/package.json'))['version'])")
+          echo "server.json: $manifest   npm/package.json: $pkg"
+          if [ "$manifest" != "$pkg" ]; then
+            echo "::error::server.json ($manifest) and npm/package.json ($pkg) disagree."
+            echo "The registry entry points at the npm package, so a mismatch publishes a version"
+            echo "that does not exist on npm. Bump both together."
+            exit 1
+          fi
+
+      - name: Install mcp-publisher
+        run: |
+          version=$(curl -sS https://api.github.com/repos/modelcontextprotocol/registry/releases/latest \
+            | python3 -c "import sys,json;print(json.load(sys.stdin)['tag_name'])")
+          echo "using mcp-publisher $version"
+          curl -sSL -o publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${version}/mcp-publisher_linux_amd64.tar.gz"
+          tar -xzf publisher.tar.gz mcp-publisher
+          chmod +x mcp-publisher
+
+      - name: Publish
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
+
+      - name: Confirm the registry agrees
+        run: |
+          sleep 10
+          curl -sS "https://registry.modelcontextprotocol.io/v0/servers?search=mintpdf" \
+            | python3 -c "
+          import sys, json
+          for s in json.load(sys.stdin).get('servers', []):
+              srv = s.get('server', s)
+              meta = (s.get('_meta') or {}).get('io.modelcontextprotocol.registry/official', {}) or {}
+              if meta.get('isLatest'):
+                  print('registry latest is now', srv.get('version'))
+          "
