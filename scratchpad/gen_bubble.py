@@ -19,9 +19,10 @@ TEMPLATE = '''/**
  * Written for Plugin API v4 (Node 22): an async function using native fetch. Do not reintroduce
  * context.async or context.request; v4 removed Fibers and both are deprecated behind context.v3.
  *
- * By default the finished PDF is uploaded into the Bubble app's own file storage and a permanent
- * URL is returned. The incumbent PDF plugins hand back links that expire or image-based renders,
- * and the resulting dead links are a large part of why the category leaders sit at 3.5 stars.
+ * Returns a hosted MintPDF link, valid for one hour. Storing the file in the app's own storage is
+ * NOT possible here: a v4 server-side action receives no file upload API (see the note lower down).
+ * The advantage over the incumbents is render quality, not permanence: real selectable text and
+ * correct page breaks, rather than a screenshot of the page wrapped in a PDF.
  */
 async function (properties, context) {{
   var apiKey = (context.keys && context.keys.api_key) || "";
