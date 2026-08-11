@@ -110,6 +110,18 @@ Body takes **exactly one** source, plus options:
 
 MCP streamable-HTTP endpoint, stateless. Same capabilities as the REST API.
 
+### Postman
+
+A ready-made collection covering every endpoint and option lives in
+[`postman/`](postman/mintpdf.postman_collection.json). Import it by link:
+
+```
+https://raw.githubusercontent.com/TrendTweekers/mintpdf/main/postman/mintpdf.postman_collection.json
+```
+
+The first request runs with no key at all, and fetching a free key stores it into the collection
+variable automatically, so the rest of the collection works straight after.
+
 ## Limits
 
 | Tier | Limit | Price |

@@ -1,0 +1,415 @@
+{
+  "info": {
+    "name": "MintPDF — HTML & Markdown to PDF API",
+    "description": "Turn HTML or Markdown into a styled PDF, or render a public URL, and get the file or a download link back. Built for developers and AI agents.\n\n**No signup to try.** The first request below works with no key at all: anonymous use is 10 renders a day per IP. A free key (email only, no card) raises that to 100 a month.\n\n### Why another PDF API\n- **No templates.** No template editor, no template IDs, no dashboard. Your code or your agent already produced the content, so skip that step.\n- **Markdown looks right by default.** Tables, code blocks, blockquotes and headings come out styled rather than as a wall of text.\n- **Page breaks are handled.** Most HTML-to-PDF pipelines slice a table row or a code block straight across a page boundary. Rows, list items, code blocks, blockquotes and figures are kept whole, table headers repeat on every page, and headings are not left stranded at the bottom of a page.\n- **Nothing is kept.** Rendered files auto-delete after one hour. No document storage.\n- **MCP native.** The same capability is exposed as an MCP server, so an AI agent can produce a document mid-conversation. See the MCP folder.\n\n### Getting started\n1. Run **Render Markdown to PDF** in *Start here*. No setup.\n2. Run **Get a free API key**. It stores the key in the `apiKey` collection variable automatically, and every other request then uses it.\n\n### Limits\n| Tier | Renders | Price |\n|---|---|---|\n| Anonymous | 10/day per IP | free, no signup |\n| Free key | 100/month | free, email only |\n| Solo | 3,000/month | $19/mo |\n| Team | 12,000/month | $49/mo |\n| Scale | 50,000/month | $129/mo |\n\nSelf-hosting is possible too: the project is MIT licensed with a published container image. See https://mintpdf.dev",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{apiKey}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://mintpdf.dev",
+      "type": "string",
+      "description": "Point this at your own instance if you self-host."
+    },
+    {
+      "key": "apiKey",
+      "value": "",
+      "type": "string",
+      "description": "Filled in automatically when you run 'Get a free API key'. Leave empty to use the anonymous tier."
+    }
+  ],
+  "item": [
+    {
+      "name": "Start here",
+      "description": "Two requests, in order. Neither needs anything set up first.",
+      "item": [
+        {
+          "name": "Render Markdown to PDF (no key needed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"markdown\": \"# Invoice #42\\n\\n**Acme Ltd**  \\nDue 30 September 2026\\n\\n| Item | Qty | Price |\\n|---|---:|---:|\\n| Widget | 3 | $9.00 |\\n| Gadget | 1 | $24.00 |\\n| **Total** | | **$51.00** |\\n\\nThank you for your business.\",\n  \"pageNumbers\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pdf"
+              ]
+            },
+            "description": "Send Markdown, get PDF bytes back. **This works with no API key**, so you can run it right now: anonymous use is 10 renders a day per IP.\n\nIn Postman the response is a binary body. Use **Save response → Save to a file** to open it, or run the *Get a link instead of the file* request if you would rather have a URL.\n\nThe sample is an invoice on purpose: the table shows the default styling and the page-break handling that this API exists to get right.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get a free API key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"you@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "keys"
+              ]
+            },
+            "description": "Email only, no card, no verification loop. Returns `{\"key\": \"pm_…\"}`.\n\nA test script on this request writes the key straight into the `apiKey` collection variable, so every other request in the collection starts working immediately. Change the email below to your own first.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Store the issued key so the rest of the collection just works.",
+                  "const data = pm.response.json();",
+                  "if (data && data.key) {",
+                  "  pm.collectionVariables.set('apiKey', data.key);",
+                  "  console.log('Saved apiKey. Monthly limit: ' + data.daily_limit);",
+                  "}",
+                  "pm.test('key issued', function () {",
+                  "  pm.expect(pm.response.code).to.eql(200);",
+                  "  pm.expect(data).to.have.property('key');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rendering",
+      "description": "Every option the endpoint takes. All of these use the `apiKey` variable.",
+      "item": [
+        {
+          "name": "Header, footer and page numbers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"markdown\": \"# Quarterly report\\n\\nRevenue grew 12% quarter on quarter.\\n\\n## Detail\\n\\nSee the appendix for the full breakdown.\",\n  \"headerText\": \"Acme Ltd \\u00b7 Confidential\",\n  \"footerText\": \"Q3 2026\",\n  \"pageNumbers\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pdf"
+              ]
+            },
+            "description": "`headerText` and `footerText` add small running text to every page. `pageNumbers` appends `3 / 7` to the footer.\n\nWorth knowing if you are building this yourself: Chromium's header and footer templates ignore your page CSS, render at near-zero font size unless styled inline, and sit outside your content margins. That is handled here."
+          }
+        },
+        {
+          "name": "HTML instead of Markdown",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"html\": \"<h1>Certificate</h1><p style=\\\"font-size:18px\\\">Awarded to <strong>Ada Lovelace</strong> for outstanding work.</p>\",\n  \"format\": \"A4\",\n  \"landscape\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pdf"
+              ]
+            },
+            "description": "Send `html` rather than `markdown`. A full document or a fragment both work. Your own CSS is respected, so this is the option to use when you already have styled markup.\n\nProvide exactly one of `html`, `markdown` or `url`."
+          }
+        },
+        {
+          "name": "Render a public URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com\",\n  \"format\": \"A4\",\n  \"margin\": \"18mm\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pdf"
+              ]
+            },
+            "description": "Point it at a public page and get that page as a PDF.\n\nPrivate and internal addresses are refused, both when the URL is validated and at the browser's request layer, so embedded resources cannot reach them either."
+          }
+        },
+        {
+          "name": "Get a link instead of the file",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"markdown\": \"# Hello\\n\\nA short document.\",\n  \"output\": \"url\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pdf"
+              ]
+            },
+            "description": "`\"output\": \"url\"` returns JSON with a `download_url` rather than raw bytes. Easier to work with in Postman, and the right choice when you want to hand the file to someone else.\n\nThe link is valid for one hour, then the file is deleted."
+          }
+        },
+        {
+          "name": "Paper size, orientation and margins",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"markdown\": \"# Landscape Letter\\n\\nWide tables fit better this way.\",\n  \"format\": \"Letter\",\n  \"landscape\": true,\n  \"margin\": \"12mm\",\n  \"pageNumbers\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "pdf"
+              ]
+            },
+            "description": "`format` accepts `A4` (default), `Letter`, `Legal`, `A3` and `A5`. `margin` applies to all four sides and takes any CSS length, for example `20mm`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "MCP (for AI agents)",
+      "description": "MintPDF is also an MCP server, so agents such as Claude can generate a document mid-conversation.\n\nThis endpoint is **streamable HTTP and stateless**. Responses come back as `text/event-stream`, so each one arrives as `event: message` followed by a `data:` line containing the JSON-RPC payload. Send `Accept: application/json, text/event-stream` or the request is rejected.\n\nTo wire it into a client instead, the quickest route is `npx -y mintpdf-mcp`.",
+      "item": [
+        {
+          "name": "initialize",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"initialize\",\n  \"params\": {\n    \"protocolVersion\": \"2025-06-18\",\n    \"capabilities\": {},\n    \"clientInfo\": {\n      \"name\": \"postman\",\n      \"version\": \"1.0\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mcp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mcp"
+              ]
+            },
+            "description": "Standard MCP handshake. Returns the server's protocol version and capabilities.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "tools/list",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 2,\n  \"method\": \"tools/list\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mcp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mcp"
+              ]
+            },
+            "description": "Lists the two tools: `generate_pdf` and `pdf_from_url`, with their full input schemas. The server is stateless, so this works without initializing first.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "tools/call — generate_pdf",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json, text/event-stream"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 3,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"generate_pdf\",\n    \"arguments\": {\n      \"markdown\": \"# Meeting brief\\n\\n- Ship the thing\\n- Tell people about it\",\n      \"pageNumbers\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mcp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mcp"
+              ]
+            },
+            "description": "Calls the tool the way an agent would. Returns a download URL valid for one hour.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
