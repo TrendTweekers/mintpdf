@@ -100,6 +100,22 @@
   .srcbox { background:#090d0b; border:1px solid var(--line); border-radius:7px;
             padding:12px 14px; height:104px; overflow:hidden; }
   .srcbox pre { margin:0; font-size:.74rem; line-height:1.5; color:#9ecbff; white-space:pre; }
+  /* The demo box IS the product. Same look as the old <pre>, but you can type in it and press a
+     button that renders a real PDF, so nobody has to navigate anywhere to find out if this works. */
+  .srcbox { padding:0; }
+  .srcbox textarea { width:100%; height:100%; margin:0; padding:12px 14px; box-sizing:border-box;
+                     background:transparent; border:0; resize:none; outline:none;
+                     font-family:inherit; font-size:.74rem; line-height:1.5; color:#9ecbff;
+                     white-space:pre; overflow:auto; }
+  .srcbox:focus-within { border-color:var(--acc); }
+  .edithint { color:#4f6a5e; font-size:.68rem; letter-spacing:0; }
+  .runrow { display:flex; align-items:center; gap:12px; margin:10px 0 2px; }
+  .run { background:var(--acc); color:var(--acc-ink); border:0; border-radius:6px; cursor:pointer;
+         padding:7px 14px; font-weight:700; font-size:.78rem; letter-spacing:.02em; font-family:inherit; }
+  .run:hover { filter:brightness(1.08); }
+  .run[disabled] { opacity:.55; cursor:default; }
+  .runrow .status { margin:0; }
+  .paper a.dl { color:#0a6b4d; font-weight:700; text-decoration:underline; }
   .status { color:var(--mut); font-size:.7rem; letter-spacing:.06em; margin:10px 0 2px;
             display:flex; align-items:center; gap:7px; height:16px; }
   .status::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--acc); }
@@ -219,13 +235,17 @@
 
   <div class="cell c5">
     <span class="tag">02 · OUTPUT</span>
-    <div class="srcline mono"><span class="dim">markdown in →</span> <span id="rot" class="rot">invoice</span></div>
-    <div class="srcbox mono"><pre id="src"># Invoice #42
+    <div class="srcline mono"><span class="dim">markdown in →</span> <span id="rot" class="rot">invoice</span>
+      <span class="edithint sans" id="edithint">· editable, this is the real thing</span></div>
+    <div class="srcbox mono"><textarea id="src" spellcheck="false" aria-label="Markdown to convert to PDF"># Invoice #42
 
 | Item   | Price  |
 |--------|--------|
-| Widget | $9.00  |</pre></div>
-    <div class="status mono" id="status">rendered · 0.9s · A4</div>
+| Widget | $9.00  |</textarea></div>
+    <div class="runrow">
+      <button class="run" id="run" type="button">Make PDF</button>
+      <div class="status mono" id="status">rendered · 0.9s · A4</div>
+    </div>
     <div class="paper" id="paper">
       <h4>Invoice #42</h4>
       <table><tr><th>Item</th><th>Price</th></tr>
@@ -498,23 +518,21 @@ File size:      166 kB</span>
     var first = true;
     var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
+    // srcEl is a real <textarea> now, so write through .value rather than .textContent.
     async function typeInto(el, text, speed) {
-      if (reduce) { el.textContent = text; return; }
-      el.textContent = '';
+      if (reduce) { el.value = text; return; }
+      el.value = '';
       for (var n = 0; n < text.length; n++) {
-        el.textContent += text[n];
+        if (window.__mintTaken) return;   // visitor started typing: stop mid-word, the box is theirs
+        el.value += text[n];
         if (text[n] !== ' ') await wait(speed);
       }
     }
-    async function eraseWord(el) {
-      if (reduce) { el.textContent = ''; return; }
-      var t = el.textContent;
-      while (t.length) { t = t.slice(0, -1); el.textContent = t; await wait(38); }
-    }
 
     (async function loop() {
-      while (true) {
+      while (!window.__mintTaken) {
         await wait(first ? 1500 : 4600);
+        if (window.__mintTaken) return;
         first = false;
         i = (i + 1) % MODES.length;
         var m = MODES[i];
@@ -523,6 +541,7 @@ File size:      166 kB</span>
         rot.textContent = m.word;
         paperEl.classList.add('swap');
         await typeInto(srcEl, m.src, 9);
+        if (window.__mintTaken) return;
         await wait(200);
         paperEl.innerHTML = m.doc;
         paperEl.classList.remove('swap');
@@ -531,6 +550,87 @@ File size:      166 kB</span>
       }
     })();
   }
+
+  /* The real converter, in the hero. The demo cycles until someone touches the box; from then on it
+     is theirs and nothing overwrites what they typed. Renders through the same anonymous tier as the
+     API, so there is no signup between a visitor and a finished document. */
+  (function () {
+    var srcBox = document.getElementById('src');
+    var runBtn = document.getElementById('run');
+    var statusEl2 = document.getElementById('status');
+    var paperEl2 = document.getElementById('paper');
+    var hint = document.getElementById('edithint');
+    var rotEl = document.getElementById('rot');
+    if (!srcBox || !runBtn) return;
+
+    function take() {
+      if (window.__mintTaken) return;
+      window.__mintTaken = true;               // freezes the demo loop above, permanently
+      if (hint) hint.textContent = '· yours now';
+      if (rotEl) rotEl.textContent = 'your document';
+    }
+    srcBox.addEventListener('focus', take);
+    srcBox.addEventListener('input', take);
+
+    runBtn.addEventListener('click', async function () {
+      take();
+      var md = srcBox.value.trim();
+      if (!md) {
+        statusEl2.textContent = 'type some Markdown first';
+        srcBox.focus();
+        return;
+      }
+      runBtn.disabled = true;
+      statusEl2.classList.add('busy');
+      statusEl2.textContent = 'rendering…';
+      var started = Date.now();
+      try {
+        var res = await fetch('/v1/pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ markdown: md, output: 'url', pageNumbers: true })
+        });
+        var secs = ((Date.now() - started) / 1000).toFixed(1);
+        if (res.status === 429) {
+          statusEl2.classList.remove('busy');
+          statusEl2.textContent = 'daily free limit reached';
+          paperEl2.innerHTML = '<h4>That is the free limit for today</h4>' +
+            '<p style="font-size:.8rem;margin:6px 0 0">Ten renders a day without an account. ' +
+            'A free key raises it to 100 a month: <a class="dl" href="#keys">get one here</a>.</p>';
+          return;
+        }
+        if (res.status === 503) {
+          statusEl2.classList.remove('busy');
+          statusEl2.textContent = 'busy, try again in a moment';
+          return;
+        }
+        var data = await res.json();
+        if (!res.ok || !data.download_url) {
+          statusEl2.classList.remove('busy');
+          statusEl2.textContent = (data && data.error) ? data.error : 'render failed';
+          return;
+        }
+        try { if (window.umami) window.umami.track('render', { page: 'home' }); } catch (e) {}
+        statusEl2.classList.remove('busy');
+        statusEl2.textContent = 'rendered · ' + secs + 's · A4';
+        paperEl2.classList.add('swap');
+        setTimeout(function () {
+          paperEl2.innerHTML =
+            '<h4>Your PDF is ready</h4>' +
+            '<p style="font-size:.8rem;margin:6px 0 10px">Rendered in ' + secs + ' seconds. ' +
+            'The link works for one hour, then the file is deleted.</p>' +
+            '<p style="margin:0"><a class="dl" href="' + data.download_url + '" target="_blank" rel="noopener">Open the PDF →</a></p>' +
+            '<div class="pf"><span>Generated with MintPDF</span><span>no account used</span></div>';
+          paperEl2.classList.remove('swap');
+        }, 180);
+      } catch (err) {
+        statusEl2.classList.remove('busy');
+        statusEl2.textContent = 'network error, try again';
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+  })();
 
   var up = document.getElementById('upform');
   var upout = document.getElementById('upout');
