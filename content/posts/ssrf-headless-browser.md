@@ -100,6 +100,12 @@ Here is where I lost the most time, and where I suspect most implementations are
 of the six below were real bugs in my own code, found by writing the test suite rather than by reading
 it.
 
+If you use a library for this rather than hand-rolling it, good instinct, and you still want this
+list. Read each item as a test case to throw at whatever you chose, because a parser that quietly
+accepts one of these spellings fails **open**, and nothing in your logs will tell you. The short
+version, if you read nothing else: `::ffff:7f00:1`, `fe80::1%eth0`, `::ffff:1.2.3.4.5` and
+`http://[::1]/` should all be refused. If any of them is allowed, you have the bug.
+
 **`parseInt` is not a validator.** It takes a valid prefix and ignores the rest, so `parseInt("1g", 16)`
 is `1` rather than an error. Validate the shape first and parse second:
 

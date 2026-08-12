@@ -106,7 +106,10 @@ export const STYLE = `
   pre{background:#090d0b;border:1px solid var(--line);border-radius:8px;padding:15px 17px;
       overflow-x:auto;font-size:.82rem;line-height:1.55;color:#cfe4db}
   pre code{background:none;padding:0;color:inherit}
-  code{background:#121917;padding:.12em .38em;border-radius:4px;font-size:.86em;color:var(--acc)}
+  /* Long inline spans (URLs, expressions) wrap on narrow screens. Without box-decoration-break the
+     background box tears in half across the line break and reads as a rendering fault. */
+  code{background:#121917;padding:.12em .38em;border-radius:4px;font-size:.86em;color:var(--acc);
+       overflow-wrap:break-word;-webkit-box-decoration-break:clone;box-decoration-break:clone}
   table{border-collapse:collapse;width:100%;font-size:.9rem;margin:16px 0;display:block;overflow-x:auto}
   th,td{border:1px solid var(--line);padding:9px 12px;text-align:left}
   th{background:#121917;color:var(--mut);font-size:.84rem}
