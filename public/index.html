@@ -76,6 +76,16 @@
   h1 em { color:var(--acc); font-style:normal; }
   .sub { color:var(--mut); max-width:70ch; margin:0; }
 
+  /* Primary action. Visitors arrived, watched the demo animation, and left without ever finding the
+     working converter: 48 landing-page uniques to 3 on /markdown-to-pdf on launch day. Let the page
+     work before it asks for an email. */
+  .trynow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:16px 0 0; }
+  .trynow a.go { display:inline-block; background:var(--acc); color:var(--acc-ink); text-decoration:none;
+                 padding:11px 20px; border-radius:8px; font-weight:700; font-size:.9rem;
+                 letter-spacing:.01em; }
+  .trynow a.go:hover { filter:brightness(1.08); }
+  .trynow .note { color:var(--mut); font-size:.82rem; }
+
   .k { color:var(--acc); } .s { color:#9ecbff; } .cm { color:#4f6a5e; }
   pre { margin:10px 0 0; overflow-x:auto; font-size:.82rem; line-height:1.55; color:#cfe4db; }
 
@@ -182,9 +192,9 @@
     </span>
     <span class="what sans">HTML &amp; Markdown → PDF API · MCP native</span>
     <span class="nav sans">
-      <a href="/markdown-to-pdf">Free converter</a>
       <a href="/guides">Guides</a>
-      <a class="cta" href="#keys">GET A FREE KEY</a>
+      <a href="#keys">Free key</a>
+      <a class="cta" href="/markdown-to-pdf">TRY IT FREE</a>
     </span>
   </div>
 
@@ -194,6 +204,10 @@
     <p class="sub sans">A PDF API for developers and AI agents. No template editor, no template IDs,
     no dashboard. One POST request, or one MCP tool call. Markdown comes with a stylesheet that makes
     agent-written documents look right by default.</p>
+    <div class="trynow">
+      <a class="go" href="/markdown-to-pdf">Paste Markdown, get a PDF →</a>
+      <span class="note sans">No signup. No card. 10 a day free.</span>
+    </div>
     <div class="foot">
       <table class="spec">
         <tr><td>built for</td><td>invoices · receipts · reports · agent output</td></tr>
