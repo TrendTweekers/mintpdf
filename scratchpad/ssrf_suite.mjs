@@ -16,6 +16,35 @@ const headers = KEY
   ? { "Content-Type": "application/json", Authorization: `Bearer ${KEY}` }
   : { "Content-Type": "application/json" };
 
+/**
+ * This suite sends more requests than the anonymous tier allows in a day, so without a key (or a
+ * raised local limit) the run turns into 429s partway through. That failure mode is actively
+ * dangerous here: a blocked case passes only when the response is 400, so a 429 gets reported as
+ * LEAK!! against a server that is in fact refusing correctly. Reading that output sends you hunting
+ * a vulnerability that does not exist, or teaches you to discount the word LEAK. Either way the
+ * suite has become worse than useless.
+ *
+ * So fail loudly and early rather than printing a plausible wrong answer.
+ *
+ *   local:  ANON_DAILY_LIMIT=5000 node dist/server.js
+ *   remote: BASE=https://mintpdf.dev MINTPDF_KEY=pm_... node scratchpad/ssrf_suite.mjs
+ */
+{
+  const probe = await fetch(`${BASE}/v1/pdf`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ markdown: "quota preflight" }),
+  });
+  if (probe.status === 429) {
+    console.error(
+      "\n  ABORT: this client is being rate limited, so every blocked case would report LEAK!! on\n" +
+        "  a 429 rather than on a real bypass. Re-run with MINTPDF_KEY, or locally with\n" +
+        "  ANON_DAILY_LIMIT raised. No result is trustworthy until this preflight passes.\n",
+    );
+    process.exit(2);
+  }
+}
+
 const blocked = [
   ["cloud metadata", { url: "http://169.254.169.254/latest/meta-data/" }],
   ["loopback", { url: "http://127.0.0.1/" }],
