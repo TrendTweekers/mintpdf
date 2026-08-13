@@ -263,6 +263,18 @@ export function renderConverter(
   .go button:hover { filter:brightness(1.08); }
   .go button:disabled { opacity:.5; cursor:default; }
   .note { color:var(--mut); font-size:.78rem; }
+  /* Shown only after someone has converted a few documents, counted in their own browser and never
+     sent anywhere. The server cannot see repeat visitors (the visitor hash is re-salted daily and on
+     purpose), so this is the one honest way to notice that somebody keeps coming back. The pitch uses
+     THEIR document, because a working example of your own input is far more convincing than ours. */
+  .apinudge { border:1px solid var(--acc); border-radius:8px; padding:13px 15px; margin-top:12px;
+              background:rgba(60,224,165,.05); }
+  .apinudge strong { display:block; font-size:.86rem; margin-bottom:3px; }
+  .apinudge p { margin:0 0 8px; color:var(--mut); font-size:.78rem; }
+  .apinudge pre { margin:0 0 9px; padding:10px 11px; background:#090d0b; border-radius:6px;
+                  font-size:.7rem; line-height:1.5; color:#9ecbff; overflow-x:auto; white-space:pre; }
+  .apinudge a { color:var(--acc); text-decoration:none; font-size:.8rem; font-weight:700; }
+  .apinudge a:hover { text-decoration:underline; }
   .preview { flex:1; border:1px solid var(--line); border-radius:8px; background:#fdfdf8;
              min-height:320px; display:flex; align-items:center; justify-content:center;
              color:#8a8a80; font-size:.85rem; overflow:hidden; }
@@ -321,6 +333,12 @@ export function renderConverter(
       <h2>Your PDF</h2>
       <div class="preview" id="preview">The rendered document appears here.</div>
       <div class="go"><a id="dl" class="note" href="#" style="display:none">Download the PDF →</a></div>
+      <div class="apinudge" id="apinudge" hidden>
+        <strong>You have made a few of these now.</strong>
+        <p>The same document from your own code, no page needed:</p>
+        <pre id="nudgecurl"></pre>
+        <a href="/" id="nudgelink">Read the API reference →</a>
+      </div>
     </div>
   </div>
 
@@ -369,6 +387,37 @@ ${TRANSFORMS}
   var preview = document.getElementById('preview'), dl = document.getElementById('dl');
   var src = document.getElementById('src');
 
+  /* How many documents this person has made, kept in their own browser and never sent to us. The
+     server deliberately cannot answer this: the visitor hash is re-salted every midnight, so anyone
+     who returns tomorrow is a new stranger to it. Counting locally is the only way to notice a repeat
+     user without starting to track people. */
+  function bumpCount() {
+    try {
+      var n = (parseInt(localStorage.getItem('mintpdf.made') || '0', 10) || 0) + 1;
+      localStorage.setItem('mintpdf.made', String(n));
+      return n;
+    } catch (e) { return 0; }   // private mode, storage disabled: just never nudge
+  }
+
+  /* Pitch the API with the document they just made. A curl they can paste and watch work beats any
+     generic example, because it proves the API produces the thing already on their screen. */
+  function showApiNudge(markdown, why) {
+    var box = document.getElementById('apinudge');
+    if (!box || !box.hidden) return;            // never show it twice in one visit
+    var sample = markdown.length > 220 ? markdown.slice(0, 220) + '\\n…' : markdown;
+    document.getElementById('nudgecurl').textContent =
+      'curl -X POST https://mintpdf.dev/v1/pdf \\\\\\n' +
+      '  -H "Content-Type: application/json" \\\\\\n' +
+      '  -d ' + JSON.stringify(JSON.stringify({ markdown: sample, pageNumbers: true })) + ' \\\\\\n' +
+      '  --output document.pdf';
+    box.hidden = false;
+    track('api-nudge-shown', { page: '${cfg.slug}', why: why });
+    var link = document.getElementById('nudgelink');
+    if (link) link.addEventListener('click', function () {
+      track('api-nudge-clicked', { page: '${cfg.slug}', why: why });
+    });
+  }
+
   go.addEventListener('click', async function () {
     var markdown;
     try {
@@ -392,7 +441,10 @@ ${TRANSFORMS}
       });
       var data = await res.json();
       if (res.status === 429) {
-        status.textContent = 'Daily free limit reached. A free key raises it to 100 a month.';
+        // Someone who wants an eleventh document today is the most qualified visitor this page ever
+        // gets. Offer both roads out, not just the free key.
+        status.textContent = 'Daily free limit reached. A free key raises it to 100 a month, or use the API.';
+        showApiNudge(markdown, 'limit');
         track('limit-hit', { page: '${cfg.slug}' });
         return;
       }
@@ -407,6 +459,7 @@ ${TRANSFORMS}
       var left = res.headers.get('x-ratelimit-remaining');
       status.textContent = 'Done, ' + Math.round(data.size_bytes / 1024) + ' KB' +
         (left !== null ? ' · ' + left + ' conversions left today' : '') + ' · link expires in an hour';
+      if (bumpCount() >= 3) showApiNudge(markdown, 'repeat');
     } catch (e) {
       status.textContent = 'Network error. Try again.';
     } finally { go.disabled = false; }
