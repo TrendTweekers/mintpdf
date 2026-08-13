@@ -1,14 +1,40 @@
 # Keyword research queue
 
-Ubersuggest free tier allows **3 `keyword_overview` reports per day** and resets at midnight. Its
-`google_suggestions` proxy is separately rate-limited and was returning 429.
+## Method: three free layers, no subscription
 
-**Google's own autocomplete is free and unlimited and does not touch that quota.** Use it to build
-candidate lists, then spend the three daily reports only on finalists:
+**1. Google autocomplete — free, unlimited, candidate discovery.** No volumes, but it is where the
+candidate list comes from and it costs nothing:
 
 ```
 https://suggestqueries.google.com/complete/search?client=firefox&hl=en&gl=us&q=<seed>
 ```
+
+**2. Bing Webmaster `GetKeywordStats` — free, real numbers, works with the existing API key** and is
+NOT site-scoped, so the key for the other five properties queries anything:
+
+```
+https://ssl.bing.com/webmaster/api.svc/json/GetKeywordStats?q=<kw>&country=us&language=en-US&apikey=<key>
+```
+
+Returns monthly Impressions and BroadImpressions per date. **Its floor is high**: "markdown to pdf"
+returns 167 impressions/month, but "html to pdf api" (90/mo on Google) returns an empty array, so it
+cannot discriminate in the long tail, which is exactly where the interesting keywords are. Use it to
+separate big from small, not to rank the small ones. `GetRelatedKeywords` returns nothing useful.
+
+**3. Ubersuggest — 3 reports/day, ALL tools share the quota.** The important part:
+**`match_keywords` returns up to 50 keywords with volume, difficulty and CPC for the SAME one report
+that a single-keyword lookup costs.** Three calls a day is up to 150 measured keywords, not 3. Never
+spend a report on `keyword_overview` for one keyword again unless it is a one-off check.
+
+### Rejected alternatives (checked 2026-08-13)
+
+- **Google Ads Keyword Planner**: without active ad spend it shows ranges ("1K-10K"), not numbers, so
+  50 / 90 / 110 / 14,800 all collapse into two buckets. Also the Ads API needs a developer token that
+  is test-account-only until you apply for production access. Not usable for this work.
+- **Ahrefs**: the official MCP is installed in the claude.ai account and only needs an OAuth click,
+  but it requires a paid subscription to return data. Peter declined.
+- **DataForSEO**: real and cheap per request, worth revisiting only if this becomes an automated
+  pipeline. OpenSEO MCP is a wrapper over it, so it is not free either.
 
 ## Measured so far (US)
 
