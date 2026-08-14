@@ -53,7 +53,31 @@ Winning the two winnable terms outright is maybe 60 clicks/month, three customer
 Search cannot be the channel for buyers. Volume only exists on the free-converter side, which is why
 the localStorage API bridge is the primary acquisition mechanism rather than a nice-to-have.
 
-## The seam worth testing next
+## Measured 2026-08-14, three reports, two strategies killed
+
+**"convert a html to pdf": 14,800/mo at difficulty 11 is a DATA ARTIFACT.** The SERP shows an AI
+Overview at position 1 and then pdfcrowd (DA 44, 5,068 clicks), adobe (96), sejda (64), reddit (92),
+ilovepdf (65), youtube (100), cloudconvert (67), itextpdf (53), princexml (49), smallpdf. **The DA
+floor is 44 and nothing weak is on the page.** The original doctrine (skip html-to-pdf) was correct.
+**Rule: trust the SERP, never the difficulty score.** A huge-volume keyword at difficulty 11 is a bug
+in the data, not an opportunity.
+
+**The developer-modifier seam does not exist.** puppeteer pdf 170/mo, markdown to pdf python 110,
+puppeteer pdf generation 50, pdf generation library 40, convert markdown to pdf python 30, the rest
+0-30. Roughly 400-500 searches/month total, and **CPC is $0.00 on every single one**. Advertisers pay
+$9-$15.58 for "pdf generation api" and nothing at all here, which is the market saying these searchers
+do not buy. Hypothesis disproven; do not build pages for it.
+
+**What survives is what we already had:** "markdown to pdf" 14,800/mo, difficulty 40, DA floor 11 on
+page one, and the page is already built and correctly targeted (title, h1 and description all match,
+including the "convert markdown to pdf" variant at 3,600/mo). **The bottleneck is authority and age,
+not keywords or copy.** Nothing on-page left to fix. Stop researching and let the page age.
+
+Worth studying instead: **pdfcrowd.com holds position 2 at DA 44 with ~5,068 clicks/month** running
+almost exactly our business model (hosted HTML-to-PDF API with free converter pages). Better comparable
+than apitemplate.io because they already hold the position we want.
+
+## The seam that was tested and failed
 
 Developer-modifier queries sit between the two populations: consumer-sized volume, but the searcher
 is a developer with an ongoing problem rather than someone converting one file. A person searching
