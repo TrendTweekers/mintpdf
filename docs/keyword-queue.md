@@ -104,3 +104,39 @@ turf at DA 75-96.
 Check the SERP before writing, every time. Only build where page one has independent sites rather
 than vendor docs or the consumer-PDF giants. A page that cannot rank is a page that costs a day and
 returns nothing.
+
+## SE Ranking trial, 2026-08-14 — the findings that changed things
+
+14-day trial, 100K credits, MCP at `https://api.seranking.com/mcp`. **Auth is `X-Api-Key`, not
+`Authorization: Bearer`** (the Bearer path returns 401 and tells you to use OAuth). 217 tools.
+
+**It settled the "convert a html to pdf" question independently.** Ubersuggest said 14,800/mo;
+SE Ranking says **10**. Two sources now agree that number was an artifact, matching what the SERP
+already showed.
+
+**Difficulty scores are not comparable across tools and neither is authoritative.** "markdown to pdf"
+is difficulty 40 on Ubersuggest and **81** on SE Ranking; "html to pdf" is 44 vs **90**. The SERP
+remains the only real evidence.
+
+**The keyword is growing, which Ubersuggest reported as flat.** 12 months of history for
+"markdown to pdf": 4,400 → 3,200 → 4,900 → 6,600 → 8,100 → 9,900 → 10,800 → **12,100**. Roughly 3x
+in a year.
+
+**The cluster is far bigger than the head term.** `markdowntopdf.com` earns ~3,979 clicks/month from
+it: "markdown to pdf" #1 (2,579 clicks), **"md to pdf" #2 (668 clicks, and also 12,100/mo volume)**,
+"markdown pdf" (2,400/mo), "convert markdown to pdf" (720), "md to pdf converter" (590),
+"md file to pdf" (480), "convert markdown" (920). Total addressable cluster is north of 31,000
+searches a month, not 14,800.
+
+**The gap this exposed:** `/markdown-to-pdf` mentioned "md to pdf" exactly **zero** times, despite it
+being an equal-volume synonym. Fixed 2026-08-14 in the title, description, intro and a new FAQ entry
+that also lands in the FAQPage schema.
+
+**How the winners actually work.** pdfcrowd ranks **#1 for fifteen near-identical phrasings**
+("html to pdf online", "convert html to pdf online", "change html to pdf online", "turn html into
+pdf"…), each 260-320/mo and ~50 clicks, from ONE page. You do not build a page per variant. Rank the
+head term and the tail follows.
+
+**Worth using while the trial lasts:** `DATA_getDomainKeywords` on competitors, `DATA_getBacklinks*`
+for their link profiles (the link-prospecting list we have never had), `DATA_getLongTailKeywords`,
+`DATA_getKeywordQuestions`.

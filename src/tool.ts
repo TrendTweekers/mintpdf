@@ -85,6 +85,10 @@ const FAQ = [
     a: "Because invoices. A table row reading | Widget | $9.00 | would be parsed as maths and silently mangled, and price tables matter more to most documents than inline equations do.",
   },
   {
+    q: "Can I convert a .md file?",
+    a: "Yes. Open the .md file, copy its contents into the box and convert. MD to PDF and Markdown to PDF are the same thing here: .md is simply the file extension Markdown usually carries.",
+  },
+  {
     q: "Can I use this from my own code?",
     a: "Yes, this page is a thin wrapper over a public REST API, and there is an MCP server so AI agents can call it directly.",
   },
@@ -103,10 +107,10 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
 
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Markdown to PDF | Free online converter, no signup</title>
-<meta name="description" content="Convert Markdown to a polished PDF online. Tables, code blocks, Mermaid diagrams and LaTeX maths, with page breaks that never cut content in half.">
+<title>Markdown to PDF | Free MD to PDF converter, no signup</title>
+<meta name="description" content="Convert Markdown or a .md file to a polished PDF online. Tables, code blocks, Mermaid diagrams and LaTeX maths, with page breaks that never cut content in half.">
 <link rel="canonical" href="${baseUrl}/markdown-to-pdf">
-<meta property="og:title" content="Markdown to PDF | Free online converter, no signup">
+<meta property="og:title" content="Markdown to PDF | Free MD to PDF converter, no signup">
 <meta property="og:description" content="Paste Markdown, get a styled PDF. Diagrams, maths and tables included. No signup, no watermark.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${baseUrl}/markdown-to-pdf">
@@ -211,8 +215,8 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
 
   <div class="cell">
     <h1 style="margin:0 0 8px;font-size:clamp(1.6rem,2.8vw,2.2rem);letter-spacing:-.02em">Markdown to PDF</h1>
-    <p style="margin:0;color:var(--mut);max-width:78ch">Paste Markdown on the left and get a polished
-    PDF on the right. Tables keep their alignment, code blocks and diagrams are never cut in half by a
+    <p style="margin:0;color:var(--mut);max-width:78ch">Paste Markdown on the left, or the contents of a <code>.md</code> file, and get a polished
+      PDF on the right. Tables keep their alignment, code blocks and diagrams are never cut in half by a
     page break, and Mermaid diagrams and LaTeX maths both render. Free, no account, no watermark.</p>
   </div>
 
