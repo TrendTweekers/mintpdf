@@ -60,7 +60,7 @@ identical submissions from a new account across many sites is the pattern modera
 | site | submit URL | free tier | notes |
 |---|---|---|---|
 | ~~devhunt.org~~ | — | **NO. $49** | Paywall is hidden at step 4: every launch date costs $49, and their own copy sells it as "DoFollow backlink (DR 57)". No free path exists. |
-| awesomeindie.com | https://awesomeindie.com/submit | appears free | |
+| awesomeindie.com | https://awesomeindie.com/submit | **free, DONE 2026-08-14** | Submitted. Goes live **22-29 Jan 2027**: 3,183 products queued ahead. $9.99 skips the queue, declined (small site, and we are not buying position). |
 | ainave.com | https://ainave.com/submit | appears free | |
 | microlaunch.net | https://microlaunch.net/submit | yes | paid tier is "skip the queue", ignore it |
 | fazier.com | https://fazier.com/submit | yes | $29-$149 upsell, ignore |
@@ -115,3 +115,21 @@ paid $49 or it was free when they did it. Some fraction of the "22 dofollow doma
 page one may be **bought links**, which we have decided not to buy. If so, that bar is not reachable
 by legitimate free means alone, and the honest path is fewer directory links plus more of what
 actually works: writing, and being genuinely useful somewhere public.
+
+## Channel verdict, 2026-08-14
+
+Two sites walked end to end, and both monetise the link:
+
+- **DevHunt** — no free path at all. Every launch date is **$49**, hidden at step 4, sold in their
+  own copy as "DoFollow backlink (DR 57)". Abandoned.
+- **Awesome Indie** — genuinely free and submitted, but live **22-29 Jan 2027** because 3,183
+  products are queued. $9.99 skips the queue; declined.
+
+So the realistic yield from this channel is: a handful of links, most of them months away, from small
+sites, with a paid fast lane at every turn. That is materially worse than the estimate in
+`docs/link-targets.md`, which assumed the free queues were both open and timely.
+
+**Where the effort should actually go:** dev.to produced a real dofollow link from a DR ~90 domain in
+about an hour, and it is still the only free channel this project has that measurably worked. One
+article beats ten of these. Finish the queue slowly, in spare minutes, and stop treating it as the
+plan.
