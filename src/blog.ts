@@ -69,64 +69,73 @@ export function getPost(slug: string): Post | undefined {
 }
 
 export const STYLE = `
-  :root { --bg:#0a0e0c; --cell:#0e1412; --line:#233830; --ink:#e9f1ed; --mut:#7f978c;
-          --acc:#3ce0a5; --acc-ink:#052b1e; }
+  /* Same system as the landing page: a true neutral near-black, no green cast.
+     Variable NAMES are unchanged so every page using them keeps working; only the
+     values move. --raised is new, for the one-step-up surface the landing page uses. */
+  :root { --bg:#0b0b0c; --cell:#101012; --raised:#16161a; --line:#1f1f24; --line-str:#2b2b32;
+          --ink:#ededf0; --mut:#6e6e78; --acc:#3ce0a5; --acc-ink:#04170f; }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.72;
-       font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:16px}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.7;
+       font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       font-size:15.5px;font-feature-settings:"cv02","cv03","cv04","ss01";
+       -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   a{color:var(--acc);text-decoration:none} a:hover{text-decoration:underline}
-  code,pre,.mono{font-family:"SF Mono",ui-monospace,Consolas,Menlo,monospace}
+  code,pre,.mono{font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace}
   h1,h2,h3,p,li{text-wrap:pretty}
 
-  .wrap{max-width:1560px;margin:0 auto;padding:26px 28px}
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 28px}
   .cell{background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:22px 26px;
         position:relative}
-  .head{display:flex;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 22px;
-        margin-bottom:14px}
-  .head .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.5rem;
-               letter-spacing:-.02em;color:var(--ink)}
+  /* Same bar as the landing page: compact, sticky, one hairline. A 1.5rem brand and an
+     uppercase CTA made every inner page read as a different site. */
+  .head{display:flex;flex-direction:row;align-items:center;gap:18px;flex-wrap:wrap;
+        padding:0;height:58px;margin-bottom:22px;border-bottom:1px solid var(--line)}
+  .head .brand{display:flex;align-items:center;gap:9px;font-weight:640;font-size:15px;
+               letter-spacing:-.015em;color:var(--ink)}
   .head .brand:hover{text-decoration:none}
-  .head .what{color:var(--mut);font-size:.9rem}
-  .head .nav{margin-left:auto;display:flex;align-items:center;gap:20px}
-  .head .nav a{color:var(--mut);font-size:.85rem}
+  .head .brand svg{width:20px;height:20px}
+  .head .what{color:var(--mut);font-size:12.5px;padding-left:18px;border-left:1px solid var(--line)}
+  .head .nav{margin-left:auto;display:flex;align-items:center;gap:22px}
+  .head .nav a{color:#a1a1aa;font-size:13.5px;transition:color .15s ease}
   .head .nav a:hover{color:var(--ink);text-decoration:none}
-  .head .cta{border:1px solid var(--acc);color:var(--acc);padding:8px 15px;border-radius:7px;
-             font-weight:700;font-size:.8rem;letter-spacing:.06em}
-  .head .cta:hover{background:var(--acc);color:var(--acc-ink);text-decoration:none}
+  .head .cta{border:1px solid #1f6b52;color:var(--acc);padding:6px 13px;border-radius:6px;
+             font-weight:560;font-size:13px;letter-spacing:0;
+             transition:background .16s ease,border-color .16s ease,color .16s ease}
+  .head .cta:hover{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);text-decoration:none}
 
   .body-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
   article{max-width:74ch}
-  .tag{position:absolute;top:10px;right:14px;color:#4aa885;font-size:.68rem;letter-spacing:.14em;font-weight:600}
+  .tag{position:absolute;top:10px;right:14px;color:#3ca882;font-size:.68rem;letter-spacing:.14em;font-weight:600}
 
   h1{font-size:clamp(1.6rem,3vw,2.3rem);line-height:1.15;letter-spacing:-.02em;margin:0 0 12px}
   h2{font-size:1.25rem;margin:34px 0 10px;letter-spacing:-.01em}
   h3{font-size:1.02rem;margin:26px 0 8px}
   .meta{color:var(--mut);font-size:.82rem;margin-bottom:26px}
-  p,li{color:#c9d8d1}
-  pre{background:#090d0b;border:1px solid var(--line);border-radius:8px;padding:15px 17px;
-      overflow-x:auto;font-size:.82rem;line-height:1.55;color:#cfe4db}
+  p,li{color:#c8c8cf}
+  pre{background:#101012;border:1px solid var(--line);border-radius:8px;padding:15px 17px;
+      overflow-x:auto;font-size:.82rem;line-height:1.55;color:#cfe9dd}
   pre code{background:none;padding:0;color:inherit}
   /* Long inline spans (URLs, expressions) wrap on narrow screens. Without box-decoration-break the
      background box tears in half across the line break and reads as a rendering fault. */
-  code{background:#121917;padding:.12em .38em;border-radius:4px;font-size:.86em;color:var(--acc);
+  code{background:#16161a;padding:.12em .38em;border-radius:4px;font-size:.86em;color:var(--acc);
        overflow-wrap:break-word;-webkit-box-decoration-break:clone;box-decoration-break:clone}
   table{border-collapse:collapse;width:100%;font-size:.9rem;margin:16px 0;display:block;overflow-x:auto}
   th,td{border:1px solid var(--line);padding:9px 12px;text-align:left}
-  th{background:#121917;color:var(--mut);font-size:.84rem}
+  th{background:#16161a;color:var(--mut);font-size:.84rem}
   blockquote{border-left:3px solid var(--acc);margin:18px 0;padding:2px 0 2px 16px;color:var(--mut)}
   hr{border:none;border-top:1px solid var(--line);margin:32px 0}
 
   .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
   .card{display:block;background:var(--cell);border:1px solid var(--line);border-radius:10px;
         padding:20px 22px;transition:border-color .15s}
-  .card:hover{border-color:#2f4b40;text-decoration:none}
+  .card:hover{border-color:#2b2b32;text-decoration:none}
   .card h2{margin:0 0 6px;font-size:1.08rem;color:var(--ink)}
   .card p{margin:0;color:var(--mut);font-size:.92rem}
-  .card .d{color:#54695f;font-size:.72rem;margin-top:10px;letter-spacing:.06em}
+  .card .d{color:#6e6e78;font-size:.72rem;margin-top:10px;letter-spacing:.06em}
 
   .endnote{margin-top:34px;border-top:1px solid var(--line);padding-top:18px;color:var(--mut);
            font-size:.92rem}
-  footer{max-width:1560px;margin:0 auto;padding:10px 30px 44px;color:var(--mut);font-size:.74rem;
+  footer{max-width:1180px;margin:0 auto;padding:10px 30px 44px;color:var(--mut);font-size:.74rem;
          display:flex;gap:20px;flex-wrap:wrap;align-items:center}
   footer .fnav{margin-left:auto;display:flex;gap:18px}
   footer a{color:var(--mut)} footer a:hover{color:var(--acc)}
@@ -134,7 +143,7 @@ export const STYLE = `
 `;
 
 export const MARK = `<svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true">
-  <path d="M18 43V13" stroke="#e9f1ed" stroke-width="3" stroke-linecap="round"/>
+  <path d="M18 43V13" stroke="#ededf0" stroke-width="3" stroke-linecap="round"/>
   <path d="M18 19C18 11 25 6 35 6c0 9-7 14-17 13z" fill="#3ce0a5"/>
   <path d="M18 32c0-7 6-11 14-11 0 8-6 12-14 11z" fill="#3ce0a5" opacity=".5"/></svg>`;
 
@@ -166,7 +175,7 @@ function shell(opts: { title: string; description: string; canonical: string; bo
       <a href="/">API</a>
       <a href="/markdown-to-pdf">Free converter</a>
       <a href="/guides">Guides</a>
-      <a class="cta" href="/#keys">GET A FREE KEY</a>
+      <a class="cta" href="/#keys">Free key</a>
     </span>
   </div>
   ${opts.body}
@@ -192,7 +201,7 @@ export function renderIndex(baseUrl: string): string {
 <p>${esc(p.description)}</p><div class="d">${esc(p.date)}</div></a>`,
         )
         .join("\n")
-    : `<p style="color:#8ea69c">First guides are being written. Check back shortly.</p>`;
+    : `<p style="color:var(--mut)">First guides are being written. Check back shortly.</p>`;
   return shell({
     title: "Guides — MintPDF",
     description: "Practical guides on generating PDFs from HTML, Markdown and AI agents.",

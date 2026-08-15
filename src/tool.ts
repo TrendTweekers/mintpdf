@@ -124,9 +124,9 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
   .pane { background:var(--cell); border:1px solid var(--line); border-radius:10px; padding:20px 22px;
           display:flex; flex-direction:column; position:relative; }
   .pane h2 { margin:0 0 12px; font-size:1rem; letter-spacing:-.01em; }
-  textarea { flex:1; min-height:340px; background:#090d0b; border:1px solid var(--line);
-             border-radius:8px; color:#cfe4db; padding:14px 16px; font-size:.84rem; line-height:1.6;
-             font-family:"SF Mono",ui-monospace,Consolas,Menlo,monospace; resize:vertical; }
+  textarea { flex:1; min-height:340px; background:#0d0d0f; border:1px solid var(--line);
+             border-radius:8px; color:#cfe9dd; padding:14px 16px; font-size:.84rem; line-height:1.6;
+             font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace; resize:vertical; }
   textarea:focus { outline:none; border-color:var(--acc); }
   .samples { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 10px; }
   .samples button { background:transparent; border:1px solid var(--line); color:var(--mut);
@@ -136,11 +136,11 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
   .opts { display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin:14px 0 0;
           color:var(--mut); font-size:.82rem; }
   .opts label { display:flex; align-items:center; gap:7px; cursor:pointer; }
-  .opts select { background:#090d0b; border:1px solid var(--line); color:var(--ink);
+  .opts select { background:#0d0d0f; border:1px solid var(--line); color:var(--ink);
                  border-radius:6px; padding:5px 8px; font-family:inherit; font-size:.8rem; }
   .go { margin-top:14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
   .go button#go { background:var(--acc); color:var(--acc-ink); border:none; border-radius:8px;
-               padding:11px 22px; font-weight:700; font-size:.86rem; letter-spacing:.04em;
+               padding:10px 18px; font-weight:620; font-size:14px; letter-spacing:0;
                cursor:pointer; font-family:inherit; }
   .go button#go:hover { filter:brightness(1.08); }
   .go button#go:disabled { opacity:.5; cursor:default; }
@@ -152,7 +152,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
               background:rgba(60,224,165,.05); }
   .apinudge strong { display:block; font-size:.86rem; margin-bottom:3px; }
   .apinudge p { margin:0 0 8px; color:var(--mut); font-size:.78rem; }
-  .apinudge pre { margin:0 0 9px; padding:10px 11px; background:#090d0b; border-radius:6px;
+  .apinudge pre { margin:0 0 9px; padding:10px 11px; background:#0d0d0f; border-radius:6px;
                   font-size:.7rem; line-height:1.5; color:#9ecbff; overflow-x:auto; white-space:pre; }
   .apinudge a { color:var(--acc); text-decoration:none; font-size:.8rem; font-weight:700; }
   .apinudge a:hover { text-decoration:underline; }
@@ -160,7 +160,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
              min-height:340px; display:flex; align-items:center; justify-content:center;
              color:#8a8a80; font-size:.85rem; overflow:hidden; }
   .preview iframe { width:100%; height:100%; min-height:340px; border:none; }
-  .keyform { display:flex; margin-top:10px; background:#090d0b; border:1px solid var(--line);
+  .keyform { display:flex; margin-top:10px; background:#0d0d0f; border:1px solid var(--line);
              border-radius:7px; overflow:hidden; transition:border-color .15s; max-width:420px; }
   .keyform:focus-within { border-color:var(--acc); }
   .keyform input { flex:1; min-width:0; background:transparent; border:none; color:var(--ink);
@@ -200,7 +200,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
     <span class="what">HTML &amp; Markdown → PDF API · MCP native</span>
     <span class="nav">
       <a href="/">API</a><a href="/markdown-to-pdf">Free converter</a><a href="/guides">Guides</a>
-      <a class="cta" href="/#keys">GET A FREE KEY</a>
+      <a class="cta" href="/#keys">Free key</a>
     </span>
   </div>
 
@@ -235,7 +235,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
         </label>
       </div>
       <div class="go">
-        <button id="go">CONVERT TO PDF</button>
+        <button id="go">Convert to PDF</button>
         <span class="note" id="status">Free, no account. A few conversions a day per visitor.</span>
       </div>
       <div class="keybox" id="keybox">
@@ -311,7 +311,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
     <h2>The same conversion from your code</h2>
     <p>This page is a thin wrapper over a public API, so what you see here is exactly what you get
     from a script:</p>
-<pre style="margin:0;background:#090d0b;border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:.8rem;color:#cfe4db">curl -X POST ${baseUrl}/v1/pdf \\
+<pre style="margin:0;background:#0d0d0f;border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:.8rem;color:#cfe9dd">curl -X POST ${baseUrl}/v1/pdf \\
   -H "Content-Type: application/json" \\
   -d '{"markdown":"# Invoice #42","pageNumbers":true}' \\
   --output invoice.pdf</pre>
