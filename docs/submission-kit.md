@@ -59,7 +59,7 @@ identical submissions from a new account across many sites is the pattern modera
 
 | site | submit URL | free tier | notes |
 |---|---|---|---|
-| devhunt.org | https://devhunt.org/submit | appears free | dev-tool specific, best audience fit |
+| ~~devhunt.org~~ | — | **NO. $49** | Paywall is hidden at step 4: every launch date costs $49, and their own copy sells it as "DoFollow backlink (DR 57)". No free path exists. |
 | awesomeindie.com | https://awesomeindie.com/submit | appears free | |
 | ainave.com | https://ainave.com/submit | appears free | |
 | microlaunch.net | https://microlaunch.net/submit | yes | paid tier is "skip the queue", ignore it |
@@ -99,3 +99,19 @@ BubuAnabelas markdown lists are about editors and syntax rather than converters.
 Everything else on the queue above needs an account and a form, so it needs a human. I will not
 script those: it is the pattern that got the Stack Overflow account IP-blocked, and the accounts are
 Peter's to keep.
+
+## Screening lesson, 2026-08-14
+
+**Checking the submit page for prices is not enough.** DevHunt's first page showed no pricing at all;
+the paywall appears at **step 4**, after you have uploaded a logo, written the copy and picked
+categories, where every launch date reads **$49**. Their own bullet sells it as "DoFollow
+backlink (DR 57)".
+
+So the rule for the rest of this queue: **do not upload anything until you have seen the final step.**
+Click through to the end first, then go back and fill it in.
+
+**And a harder implication for `docs/link-targets.md`.** md2file.com has a devhunt link. Either they
+paid $49 or it was free when they did it. Some fraction of the "22 dofollow domains" that put them on
+page one may be **bought links**, which we have decided not to buy. If so, that bar is not reachable
+by legitimate free means alone, and the honest path is fewer directory links plus more of what
+actually works: writing, and being genuinely useful somewhere public.
