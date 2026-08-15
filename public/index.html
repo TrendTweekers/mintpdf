@@ -37,382 +37,526 @@
 }
 </script>
 <style>
-  :root { --bg:#0a0e0c; --cell:#0e1412; --line:#233830; --ink:#e9f1ed; --mut:#7f978c;
-          --acc:#3ce0a5; --acc-ink:#052b1e; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink);
-         font-family:"SF Mono",ui-monospace,Consolas,Menlo,monospace; font-size:14px; line-height:1.62; }
-  a { color:var(--acc); text-decoration:none; }
-  .sans { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+/* ─────────────────────────────────────────────────────────────────────────────
+   MintPDF — visual system
 
-  .board { max-width:1560px; margin:0 auto; padding:26px 28px; display:grid; gap:14px;
-           grid-template-columns:repeat(12, 1fr); }
-  .cell { background:var(--cell); border:1px solid var(--line); border-radius:10px; padding:22px 26px;
-          position:relative; overflow:hidden; transition:border-color .15s;
-          display:flex; flex-direction:column; }
-  .cell .foot { margin-top:auto; padding-top:14px; }
-  .cell .rule { border-top:1px solid var(--line); margin:16px 0 0; }
-  .cell:hover { border-color:#2f4b40; }
-  .tag { position:absolute; top:10px; right:14px; color:#4aa885; font-size:.68rem;
-         letter-spacing:.14em; font-weight:600; }
-  .c12{grid-column:span 12} .c8{grid-column:span 8} .c6{grid-column:span 6}
-  .c4{grid-column:span 4} .c5{grid-column:span 5} .c7{grid-column:span 7}
+   The motif is the page break. This product exists because of where a document
+   gets cut, so the page is built from hairline rules and content that respects
+   them: no card soup, no rounded boxes floating on a gradient. Structure comes
+   from the lines themselves, the way a printed page is structured by its edges.
 
-  .head { display:flex; flex-direction:row; align-items:center; gap:16px; flex-wrap:wrap;
-          padding:14px 22px; }
-  .head .brand { display:flex; align-items:center; gap:10px; }
-  .head .name { font-size:1.5rem; font-weight:700; letter-spacing:-.02em; }
-  .head .what { color:var(--mut); }
-  .head .nav { margin-left:auto; display:flex; align-items:center; gap:20px; }
-  .head .nav a { color:var(--mut); font-size:.85rem; }
-  .head .nav a:hover { color:var(--ink); }
-  .head .cta { border:1px solid var(--acc); color:var(--acc); padding:8px 15px; border-radius:7px;
-               font-weight:700; font-size:.8rem; letter-spacing:.06em; }
-  .head .cta:hover { background:var(--acc); color:var(--acc-ink); }
-  .gh { display:flex; align-items:center; }
+   The corollary decides the palette: the interface is a near-neutral dark, and
+   the rendered document is the only white object on the whole page. The paper
+   is the hero because the paper is the product.
 
-  h1 { font-size:clamp(1.5rem, 2.9vw, 2.45rem); margin:2px 0 6px; letter-spacing:-.02em;
-       font-weight:700; line-height:1.2; }
-  h1 em { color:var(--acc); font-style:normal; }
-  .sub { color:var(--mut); max-width:70ch; margin:0; }
+   Green is kept, restrained, because it is the brand (the name, the mark) and
+   inventing a new accent would cost identity for nothing. The background loses
+   its green cast though: a true neutral surface is what reads as expensive.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Neutrals: a cool near-black, deliberately desaturated. */
+  --bg:       #0b0b0c;
+  --surface:  #101012;
+  --raised:   #16161a;
+  --line:     #1f1f24;
+  --line-str: #2b2b32;   /* the fold line: structural, one step brighter */
+  --ink:      #ededf0;
+  --ink-dim:  #a1a1aa;
+  --mut:      #6e6e78;
 
-  /* Primary action. Visitors arrived, watched the demo animation, and left without ever finding the
-     working converter: 48 landing-page uniques to 3 on /markdown-to-pdf on launch day. Let the page
-     work before it asks for an email. */
-  .trynow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:16px 0 0; }
-  .trynow a.go { display:inline-block; background:var(--acc); color:var(--acc-ink); text-decoration:none;
-                 padding:11px 20px; border-radius:8px; font-weight:700; font-size:.9rem;
-                 letter-spacing:.01em; }
-  .trynow a.go:hover { filter:brightness(1.08); }
-  .trynow .note { color:var(--mut); font-size:.82rem; }
+  /* One accent. Used for state and emphasis, never for decoration. */
+  --acc:      #3ce0a5;
+  --acc-dim:  #1d7a5a;
+  --acc-ink:  #04170f;
 
-  .k { color:var(--acc); } .s { color:#9ecbff; } .cm { color:#4f6a5e; }
-  pre { margin:10px 0 0; overflow-x:auto; font-size:.82rem; line-height:1.55; color:#cfe4db; }
+  --paper:    #fbfbf9;   /* the document */
+  --paper-ink:#1a1a19;
 
-  .spec { width:100%; border-collapse:collapse; font-size:.8rem; margin-top:8px; }
-  .spec td { border-top:1px solid var(--line); padding:7px 4px 7px 0; vertical-align:top; }
-  .spec td:first-child { color:var(--mut); width:42%; }
-  .spec tr:first-child td { border-top:none; }
+  --r:        6px;
+  --pad:      clamp(20px, 5vw, 44px);
+  --maxw:     1180px;
 
-  .rot { color:var(--acc); }
-  .srcline { font-size:.72rem; letter-spacing:.06em; margin:0 0 8px; height:15px; }
-  .srcline .dim { color:#4f6a5e; }
-  .srcbox { background:#090d0b; border:1px solid var(--line); border-radius:7px;
-            padding:12px 14px; height:104px; overflow:hidden; }
-  .srcbox pre { margin:0; font-size:.74rem; line-height:1.5; color:#9ecbff; white-space:pre; }
-  /* The demo box IS the product. Same look as the old <pre>, but you can type in it and press a
-     button that renders a real PDF, so nobody has to navigate anywhere to find out if this works. */
-  .srcbox { padding:0; }
-  .srcbox textarea { width:100%; height:100%; margin:0; padding:12px 14px; box-sizing:border-box;
-                     background:transparent; border:0; resize:none; outline:none;
-                     font-family:inherit; font-size:.74rem; line-height:1.5; color:#9ecbff;
-                     white-space:pre; overflow:auto; }
-  .srcbox:focus-within { border-color:var(--acc); }
-  .edithint { color:#4f6a5e; font-size:.68rem; letter-spacing:0; }
-  .runrow { display:flex; align-items:center; gap:12px; margin:10px 0 2px; }
-  .run { background:var(--acc); color:var(--acc-ink); border:0; border-radius:6px; cursor:pointer;
-         padding:7px 14px; font-weight:700; font-size:.78rem; letter-spacing:.02em; font-family:inherit; }
-  .run:hover { filter:brightness(1.08); }
-  .run[disabled] { opacity:.55; cursor:default; }
-  .runrow .status { margin:0; }
-  .paper a.dl { color:#0a6b4d; font-weight:700; text-decoration:underline; }
-  .status { color:var(--mut); font-size:.7rem; letter-spacing:.06em; margin:10px 0 2px;
-            display:flex; align-items:center; gap:7px; height:16px; }
-  .status::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--acc); }
-  .status.busy::before { background:#c9a227; }
-  .paper { transition:opacity .28s ease; min-height:196px; }
-  .paper.swap { opacity:0; }
-  @media (prefers-reduced-motion: reduce) {
-    .caret { animation:none } .paper { transition:none }
-  }
-  .paper { background:#fdfdf8; color:#20302a; border-radius:4px; padding:16px 18px 10px;
-           font-family:Iowan Old Style, Palatino, Georgia, serif; margin-top:10px;
-           box-shadow:0 10px 30px rgba(0,0,0,.45); }
-  .paper h4 { margin:0 0 4px; font-size:.95rem; border-bottom:1px solid #d8d8d0; padding-bottom:5px; }
-  .paper table { width:100%; border-collapse:collapse; font-size:.7rem; margin:8px 0 10px; }
-  .paper th,.paper td { border:1px solid #ccccc2; padding:3px 7px; text-align:left; }
-  .paper .pf { display:flex; justify-content:space-between; color:#9a9a90; font-size:.58rem;
-               border-top:1px solid #e2e2da; padding-top:6px; font-family:ui-monospace,monospace; }
+  --f-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --f-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
 
-.keyform { display:flex; margin-top:16px; background:#090d0b; border:1px solid var(--line);
-             border-radius:7px; overflow:hidden; transition:border-color .15s; }
-  .keyform:focus-within { border-color:var(--acc); }
-  .keyform input { flex:1; min-width:0; background:transparent; border:none; color:var(--ink);
-                   padding:11px 13px; font-size:.82rem; font-family:inherit; }
-  .keyform input::placeholder { color:#4f6a5e; }
-  .keyform input:focus { outline:none; }
-  .keyform button { background:transparent; border:none; border-left:1px solid var(--line);
-                    color:var(--acc); padding:0 18px; font-weight:700; font-size:.72rem;
-                    letter-spacing:.12em; cursor:pointer; font-family:inherit; white-space:nowrap;
-                    transition:background .15s, color .15s; }
-  .keyform button:hover { background:var(--acc); color:var(--acc-ink); }
-  .keyout { margin-top:11px; color:var(--mut); font-size:.78rem;
-            word-break:normal; overflow-wrap:anywhere; }
-  .keyout code { color:var(--acc); }
-  .keyout .copy { background:none; border:1px solid var(--line); color:var(--mut); border-radius:5px;
-                  padding:2px 7px; font-size:.68rem; cursor:pointer; font-family:inherit; margin-left:6px; }
-  .keyout .copy:hover { color:var(--ink); border-color:var(--acc); }
-  .pipe { display:grid; grid-template-columns:1.2fr .8fr; gap:26px; margin-top:14px; }
-  .term { background:#070b09; border:1px solid var(--line); border-radius:9px; overflow:hidden; }
-  .term-bar { display:flex; align-items:center; gap:7px; padding:8px 13px; background:#0c1210;
-              border-bottom:1px solid var(--line); }
-  .term-bar .d { width:9px; height:9px; border-radius:50%; background:#2c3f38; }
-  .term-bar .t { color:#4f6a5e; font-size:.7rem; margin-left:8px; letter-spacing:.04em; }
-  .term pre { margin:0; padding:16px 18px; font-size:.8rem; line-height:1.75; overflow-x:auto;
-              color:#8ea69c; }
-  .term .p  { color:var(--acc); }
-  .term .c  { color:#cfe4db; }
-  .term .s  { color:#9ecbff; }
-  .term .o  { color:#6f877c; }
-  .term .ok { color:var(--acc); }
-  .steps { display:flex; flex-direction:column; gap:2px; }
-  .step { padding:14px 0; border-top:1px solid var(--line); }
-  .step:first-child { border-top:none; padding-top:0; }
-  .step .n { color:var(--acc); font-size:.7rem; letter-spacing:.14em; }
-  .step h3 { margin:5px 0 5px; font-size:1rem; font-weight:700; }
-  .step p { margin:0; color:var(--mut); font-size:.88rem; line-height:1.6; }
-  @media (max-width:1000px){ .pipe { grid-template-columns:1fr; } }
-  .tierline { border-top:1px solid var(--line); margin:18px 0 14px; }
-  .big { font-size:1.7rem; font-weight:700; }
-  .big small { color:var(--mut); font-size:.75rem; font-weight:400; }
-  ul.flat { margin:8px 0 0; padding:0; list-style:none; color:var(--mut); font-size:.8rem; }
-  ul.flat li { padding:4px 0; border-top:1px solid var(--line); }
-  ul.flat li:first-child { border-top:none; }
-  ul.flat b { color:var(--ink); font-weight:600; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  font-feature-settings: "cv02","cv03","cv04","ss01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1,h2,h3,p,li { text-wrap: pretty; }
+a { color: inherit; }
 
-  footer { max-width:1560px; margin:0 auto; padding:10px 30px 44px; color:var(--mut); font-size:.74rem;
-            display:flex; gap:20px; flex-wrap:wrap; align-items:center; }
-  footer .fnav { margin-left:auto; display:flex; gap:18px; }
-  footer a { color:var(--mut); }
-  footer a:hover { color:var(--acc); }
-  @media (max-width:900px){ .c8,.c6,.c4,.c5,.c7 { grid-column:span 12; } }
-  .tiers td { padding: 3px 10px 3px 0; }
-  .tiers td:first-child { color: var(--ink); }
-  #uptier { background:#090d0b; border:none; border-right:1px solid var(--line); color:var(--ink);
-            padding:0 10px; font-family:inherit; font-size:.82rem; }
-  #uptier:focus { outline:none; }
+.wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--pad); }
+
+/* ── Rules. The structural device of the whole page. ─────────────────────── */
+.rule { height: 1px; background: var(--line); border: 0; margin: 0; }
+.rule--strong { background: var(--line-str); }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.head {
+  position: sticky; top: 0; z-index: 40;
+  background: color-mix(in oklab, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px) saturate(1.4);
+  border-bottom: 1px solid var(--line);
+}
+.head .wrap { display: flex; align-items: center; gap: 18px; height: 58px; }
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 640; letter-spacing: -.015em; font-size: 15px; }
+.brand svg { display: block; }
+.head .what {
+  color: var(--mut); font-size: 12.5px; letter-spacing: .01em;
+  padding-left: 18px; border-left: 1px solid var(--line); margin-left: 2px;
+}
+.nav { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+.nav a { color: var(--ink-dim); font-size: 13.5px; text-decoration: none; transition: color .15s ease; }
+.nav a:hover { color: var(--ink); }
+.nav .cta {
+  color: var(--acc); border: 1px solid color-mix(in oklab, var(--acc) 40%, transparent);
+  padding: 6px 13px; border-radius: var(--r); font-weight: 560; font-size: 13px;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+.nav .cta:hover { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+@media (max-width: 760px) { .head .what { display: none; } .nav { gap: 14px; } }
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.hero { padding: clamp(44px, 6vw, 76px) 0 clamp(34px, 4vw, 56px); }
+.hero-grid { display: grid; grid-template-columns: 1fr; gap: clamp(32px, 5vw, 56px); }
+@media (min-width: 940px) { .hero-grid { grid-template-columns: 1.02fr 1fr; align-items: start; } }
+
+.eyebrow {
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--mut); margin: 0 0 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+h1 {
+  font-size: clamp(2rem, 4.2vw, 2.9rem); line-height: 1.07; letter-spacing: -.035em;
+  font-weight: 620; margin: 0 0 18px;
+  /* balance stops "out." being orphaned onto a line of its own */
+  text-wrap: balance;
+}
+h1 em { font-style: normal; color: var(--mut); }
+.lede { color: var(--ink-dim); font-size: clamp(15px, 1.5vw, 16.5px); margin: 0; max-width: 46ch; }
+
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 28px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--acc); color: var(--acc-ink); text-decoration: none;
+  padding: 10px 17px; border-radius: var(--r); font-weight: 600; font-size: 14px;
+  border: 1px solid var(--acc); cursor: pointer; font-family: inherit;
+  transition: filter .16s ease, transform .16s ease;
+}
+.btn:hover { filter: brightness(1.07); }
+.btn:active { transform: translateY(1px); }
+.btn-ghost {
+  background: transparent; color: var(--ink); border-color: var(--line-str);
+  transition: border-color .16s ease, background .16s ease;
+}
+.btn-ghost:hover { border-color: var(--mut); background: var(--surface); filter: none; }
+.actions .fine { color: var(--mut); font-size: 12.5px; }
+
+/* ── The console: editable source + the document it produces ─────────────── */
+.console { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.console-bar {
+  display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 13px;
+  border-bottom: 1px solid var(--line); background: var(--raised);
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: .05em; color: var(--mut);
+}
+.console-bar .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--acc); flex: none; }
+.rot { color: var(--ink-dim); }
+.edithint { color: var(--mut); }
+@media (max-width: 480px) { .edithint { display: none; } }
+
+.srcbox { background: var(--bg); border-bottom: 1px solid var(--line); }
+.srcbox textarea {
+  display: block; width: 100%; height: 150px; margin: 0; padding: 14px 15px;
+  background: transparent; border: 0; resize: vertical; outline: none;
+  font-family: var(--f-mono); font-size: 12.5px; line-height: 1.62; color: #cfe9dd;
+  white-space: pre; overflow: auto; tab-size: 2;
+}
+.srcbox:focus-within { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--acc) 45%, transparent); }
+
+.runrow { display: flex; align-items: center; gap: 13px; padding: 12px 13px; background: var(--raised); }
+.run {
+  background: var(--acc); color: var(--acc-ink); border: 0; border-radius: var(--r); cursor: pointer;
+  padding: 8px 15px; font-weight: 620; font-size: 13px; font-family: inherit;
+  transition: filter .16s ease; flex: none;
+}
+.run:hover { filter: brightness(1.07); }
+.run[disabled] { opacity: .5; cursor: default; }
+.status {
+  font-family: var(--f-mono); font-size: 11.5px; color: var(--mut);
+  display: flex; align-items: center; gap: 7px; min-width: 0;
+}
+.status::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--acc); flex: none; }
+.status.busy::before { background: #d9a441; }
+
+/* The paper. The only white surface on the page. */
+.paper {
+  background: var(--paper); color: var(--paper-ink);
+  padding: 22px 24px 16px; min-height: 210px;
+  font-size: 13px; line-height: 1.55;
+  transition: opacity .28s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+}
+.paper.swap { opacity: 0; }
+.paper h4 { margin: 0 0 8px; font-size: 15px; font-weight: 640; letter-spacing: -.01em;
+            border-bottom: 1px solid #dededa; padding-bottom: 7px; }
+.paper table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 4px 0; }
+.paper th, .paper td { text-align: left; padding: 5px 2px; border-bottom: 1px solid #e6e6e2; }
+.paper th { color: #6b6b66; font-weight: 560; }
+.paper p { margin: 6px 0; }
+.paper a.dl { color: #0a6b4d; font-weight: 620; }
+/* The fold: a printed page always ends somewhere. */
+.paper .pf {
+  display: flex; justify-content: space-between; margin-top: 14px; padding-top: 8px;
+  border-top: 1px solid #dededa; color: #9a9a94; font-size: 10.5px;
+  font-family: var(--f-mono); letter-spacing: .04em;
+}
+
+/* ── Section scaffolding ─────────────────────────────────────────────────── */
+.sec { padding: clamp(38px, 4.6vw, 58px) 0; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 26px; }
+.sec-num { font-family: var(--f-mono); font-size: 11px; color: var(--mut); letter-spacing: .1em; flex: none; }
+h2 { font-size: clamp(1.15rem, 2.1vw, 1.5rem); font-weight: 600; letter-spacing: -.02em; margin: 0; }
+.sec-head p { margin: 0 0 0 auto; color: var(--mut); font-size: 13px; text-align: right; }
+@media (max-width: 700px) { .sec-head { flex-wrap: wrap; } .sec-head p { margin: 4px 0 0; text-align: left; width: 100%; } }
+
+.cols { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+@media (min-width: 800px) { .cols-2 { grid-template-columns: 1fr 1fr; } .cols-3 { grid-template-columns: repeat(3, 1fr); } }
+.col { background: var(--surface); padding: 22px 22px 24px; }
+.col h3 { margin: 0 0 7px; font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.col p { margin: 0; color: var(--mut); font-size: 13.5px; }
+.col .k { font-family: var(--f-mono); font-size: 11px; color: var(--acc); letter-spacing: .08em; display: block; margin-bottom: 11px; }
+
+/* ── Code ────────────────────────────────────────────────────────────────── */
+pre {
+  margin: 0; padding: 18px 20px; overflow-x: auto;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  font-family: var(--f-mono); font-size: 12.5px; line-height: 1.7; color: #cfe9dd;
+}
+code { font-family: var(--f-mono); }
+.k  { color: var(--acc); }
+.s  { color: #9ecbff; }
+.cm { color: #56606b; }
+
+/* ── Spec table: dense, aligned, no card ─────────────────────────────────── */
+.spec { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.spec td { padding: 11px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.spec tr:first-child td { border-top: 0; }
+.spec td:first-child { color: var(--mut); width: 34%; padding-right: 20px; font-family: var(--f-mono); font-size: 12px; letter-spacing: .03em; }
+
+/* ── Pricing ─────────────────────────────────────────────────────────────── */
+.tiers { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+@media (min-width: 780px) { .tiers { grid-template-columns: repeat(4, 1fr); } }
+.tier { background: var(--surface); padding: 20px; transition: background .18s ease; }
+.tier:hover { background: var(--raised); }
+.tier .nm { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; color: var(--mut); text-transform: uppercase; }
+.tier .pr { font-size: 24px; font-weight: 620; letter-spacing: -.03em; margin: 10px 0 3px; }
+.tier .pr span { font-size: 12.5px; font-weight: 400; color: var(--mut); letter-spacing: 0; }
+.tier .vol { color: var(--ink-dim); font-size: 13px; }
+.tier.is-free .pr { color: var(--acc); }
+
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+.keyform { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 12px; }
+.keyform input, .keyform select {
+  flex: 1 1 220px; min-width: 0; background: var(--bg); color: var(--ink);
+  border: 1px solid var(--line-str); border-radius: var(--r);
+  padding: 10px 13px; font-family: inherit; font-size: 14px; outline: none;
+  transition: border-color .16s ease;
+}
+.keyform input:focus, .keyform select:focus { border-color: var(--acc-dim); }
+.keyform input::placeholder { color: var(--mut); }
+.out { font-size: 13px; color: var(--ink-dim); min-height: 20px; }
+.out code { background: var(--raised); border: 1px solid var(--line); padding: 2px 7px; border-radius: 4px; color: var(--acc); font-size: 12.5px; }
+.copy { background: none; border: 1px solid var(--line-str); color: var(--ink-dim); border-radius: 4px;
+        padding: 2px 8px; font-size: 11.5px; cursor: pointer; margin-left: 7px; font-family: inherit; }
+.copy:hover { border-color: var(--mut); color: var(--ink); }
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+footer { padding: 34px 0 54px; color: var(--mut); font-size: 12.5px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
+footer a { color: var(--ink-dim); text-decoration: none; }
+footer a:hover { color: var(--ink); }
+footer .sp { margin-left: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
 </style>
+
 <script defer src="https://cloud.umami.is/script.js" data-website-id="7a43ccd2-b47d-45c2-bb22-05fc5fd46daa" data-domains="mintpdf.dev"></script>
 </head>
 <body>
 
-<div class="board">
-  <div class="cell c12 head">
+<header class="head">
+  <div class="wrap">
     <span class="brand">
-      <svg width="30" height="30" viewBox="0 0 48 48" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
         <path d="M18 43V13" stroke="#e9f1ed" stroke-width="3" stroke-linecap="round"/>
         <path d="M18 19C18 11 25 6 35 6c0 9-7 14-17 13z" fill="#3ce0a5"/>
         <path d="M18 32c0-7 6-11 14-11 0 8-6 12-14 11z" fill="#3ce0a5" opacity=".5"/>
       </svg>
-      <span class="name">MintPDF</span>
+      MintPDF
     </span>
-    <span class="what sans">HTML &amp; Markdown → PDF API · MCP native</span>
-    <span class="nav sans">
+    <span class="what">HTML &amp; Markdown → PDF · MCP native</span>
+    <nav class="nav">
       <a href="/guides">Guides</a>
+      <a href="#api">API</a>
       <a href="#keys">Free key</a>
-      <a class="cta" href="/markdown-to-pdf">TRY IT FREE</a>
-    </span>
+      <a class="cta" href="#try">Try it</a>
+    </nav>
   </div>
+</header>
 
-  <div class="cell c7">
-    <span class="tag">01 · PURPOSE</span>
-    <h1 class="sans">Markdown in. <em>Finished document out.</em></h1>
-    <p class="sub sans">A PDF API for developers and AI agents. No template editor, no template IDs,
-    no dashboard. One POST request, or one MCP tool call. Markdown comes with a stylesheet that makes
-    agent-written documents look right by default.</p>
-    <div class="trynow">
-      <a class="go" href="/markdown-to-pdf">Paste Markdown, get a PDF →</a>
-      <span class="note sans">No signup. No card. 10 a day free.</span>
-    </div>
-    <div class="foot">
-      <table class="spec">
-        <tr><td>built for</td><td>invoices · receipts · reports · agent output</td></tr>
-        <tr><td>send</td><td>Markdown, HTML, or a public URL</td></tr>
-        <tr><td>get back</td><td>PDF bytes, or a link that expires in an hour</td></tr>
-      </table>
-    </div>
-  </div>
+<main>
 
-  <div class="cell c5">
-    <span class="tag">02 · OUTPUT</span>
-    <div class="srcline mono"><span class="dim">markdown in →</span> <span id="rot" class="rot">invoice</span>
-      <span class="edithint sans" id="edithint">· editable, this is the real thing</span></div>
-    <div class="srcbox mono"><textarea id="src" spellcheck="false" aria-label="Markdown to convert to PDF"># Invoice #42
+  <!-- ── Hero. The product does its job before anything is asked of the reader. ── -->
+  <section class="hero" id="try">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">PDF rendering API</p>
+        <h1>Markdown in.<br><em>Finished document out.</em></h1>
+        <p class="lede">A PDF API for developers and AI agents. No template editor, no template
+        IDs, no dashboard. One POST request, or one MCP tool call. Markdown arrives with a
+        stylesheet that makes agent-written documents look right by default.</p>
+        <div class="actions">
+          <a class="btn" href="#try-box">Paste Markdown, get a PDF</a>
+          <a class="btn btn-ghost" href="#api">Read the API</a>
+          <span class="fine">No signup. No card. 10 a day free.</span>
+        </div>
+      </div>
+
+      <!-- The console. Editable, and it renders for real. -->
+      <div class="console" id="try-box">
+        <div class="console-bar">
+          <span class="dot"></span>
+          <span>markdown in →</span>
+          <span id="rot" class="rot">invoice</span>
+          <span class="edithint" id="edithint">· editable, this is the real thing</span>
+        </div>
+        <div class="srcbox">
+          <textarea id="src" spellcheck="false" aria-label="Markdown to convert to PDF"># Invoice #42
 
 | Item   | Price  |
 |--------|--------|
-| Widget | $9.00  |</textarea></div>
-    <div class="runrow">
-      <button class="run" id="run" type="button">Make PDF</button>
-      <div class="status mono" id="status">rendered · 0.9s · A4</div>
+| Widget | $9.00  |</textarea>
+        </div>
+        <div class="runrow">
+          <button class="run" id="run" type="button">Make PDF</button>
+          <div class="status" id="status">rendered · 0.9s · A4</div>
+        </div>
+        <div class="paper" id="paper">
+          <h4>Invoice #42</h4>
+          <table><tr><th>Item</th><th>Price</th></tr>
+          <tr><td>Widget</td><td>$9.00</td></tr><tr><td>Gadget</td><td>$24.00</td></tr></table>
+          <div class="pf"><span>Generated with MintPDF</span><span>1 / 1</span></div>
+        </div>
+      </div>
     </div>
-    <div class="paper" id="paper">
-      <h4>Invoice #42</h4>
-      <table><tr><th>Item</th><th>Price</th></tr>
-      <tr><td>Widget</td><td>$9.00</td></tr><tr><td>Gadget</td><td>$24.00</td></tr></table>
-      <div class="pf"><span>Generated with MintPDF</span><span>1 / 1</span></div>
-    </div>
-  </div>
+  </section>
 
-  <div class="cell c7">
-    <span class="tag">03 · INPUT</span>
-<pre><span class="cm"># no signup needed, 10 seconds</span>
+  <hr class="rule rule--strong">
+
+  <!-- ── The request. Developers want to see the call, not read about it. ── -->
+  <section class="sec" id="api">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">01</span>
+        <h2>One request. Chromium renders it. You get a document.</h2>
+        <p>No signup needed · 10 seconds</p>
+      </div>
+<pre><span class="cm"># Markdown or HTML in, PDF bytes out</span>
 <span class="k">curl</span> -X POST https://mintpdf.dev/v1/pdf \
   -H <span class="s">"Content-Type: application/json"</span> \
-  -d <span class="s">'{"markdown":"# Invoice #42\n\n| Item | Price |\n|---|---|\n| Widget | $9.00 |\n| Gadget | $24.00 |","pageNumbers":true}'</span> \
+  -d <span class="s">'{"markdown":"# Invoice #42\n\n| Item | Price |\n|---|---|\n| Widget | $9.00 |","pageNumbers":true}'</span> \
   --output invoice.pdf
 
 <span class="cm"># → 200 application/pdf · one A4 page, table already styled</span>
 
 <span class="cm"># want a link instead of bytes? add:</span>
   <span class="s">"output": "url"</span>  <span class="cm">→ {"download_url": "…", "expires_at": "…"}</span></pre>
-  </div>
+    </div>
+  </section>
 
-  <div class="cell c5">
-    <span class="tag">04 · MCP</span>
-<pre><span class="cm"># one line in your MCP config</span>
-<span class="s">"mintpdf"</span>: {
-  <span class="s">"command"</span>: <span class="s">"npx"</span>,
-  <span class="s">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"mintpdf-mcp"</span>]
-}
+  <hr class="rule">
 
-<span class="cm"># or point straight at the hosted endpoint with mcp-remote:</span>
-<span class="cm"># …railway.app/mcp</span></pre>
-    <table class="spec foot">
-      <tr><td>tools</td><td>generate_pdf · pdf_from_url</td></tr>
-      <tr><td>transport</td><td>streamable HTTP, stateless</td></tr>
-      <tr><td>returns</td><td>download URL, 1h TTL</td></tr>
-    </table>
-  </div>
-
-  <div class="cell c12">
-    <span class="tag">05 · HOW IT WORKS</span>
-    <h2 class="sans" style="margin:0;font-size:1.35rem;letter-spacing:-.02em">One request. Chromium renders it. You get a document.</h2>
-    <div class="pipe">
-      <div class="term">
-        <div class="term-bar"><span class="d"></span><span class="d"></span><span class="d"></span>
-          <span class="t">bash — a real session</span></div>
-<pre><span class="o"># send content, not a template id</span>
-<span class="p">$</span> <span class="c">curl -sS -X POST https://mintpdf.dev/v1/pdf \
-     -H 'Content-Type: application/json' \
-     -d '{"markdown":"# Q3 report\n\nRevenue grew **12%**.",
-          "pageNumbers":true, "footerText":"Acme Ltd"}' \
-     -o report.pdf -D -</span>
-
-<span class="o">HTTP/2 200</span>
-<span class="o">content-type: application/pdf</span>
-<span class="o">x-ratelimit-remaining: 2</span>
-
-<span class="p">$</span> <span class="c">pdfinfo report.pdf | head -3</span>
-<span class="o">Pages:          3
-Page size:      595 x 842 pts (A4)
-File size:      166 kB</span>
-
-<span class="o"># prefer a link? add "output":"url"</span>
-<span class="p">$</span> <span class="c">curl -sS …/v1/pdf -d '{"markdown":"# Hi","output":"url"}'</span>
-<span class="o">{"download_url":"https://mintpdf.dev/f/…",
- "expires_at":"…","size_bytes":6751}</span>  <span class="ok">✓</span>
-<span class="o"># the file is deleted an hour later</span></pre>
+  <!-- ── Why it looks right. This is the actual differentiator. ── -->
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">02</span>
+        <h2>The work is in the print CSS</h2>
+        <p>Where a page breaks is the whole problem</p>
       </div>
-      <div class="steps sans">
-        <div class="step">
-          <div class="n">01 · SEND</div>
-          <h3>Markdown, HTML, or a URL</h3>
-          <p>One POST, or one MCP tool call from an agent. No template to design first, no template id
-          to keep in sync with your code.</p>
+      <div class="cols cols-3">
+        <div class="col">
+          <span class="k">FRAGMENTATION</span>
+          <h3>Nothing gets sliced</h3>
+          <p>Tables, code blocks and blockquotes are not cut across a page boundary, and a row is
+          never split in half.</p>
         </div>
-        <div class="step">
-          <div class="n">02 · RENDER</div>
-          <h3>Headless Chromium, with print CSS that behaves</h3>
-          <p>Markdown gets a stylesheet that keeps code blocks and tables whole across page breaks and
-          repeats table headers. Send HTML instead and your own CSS is used as-is.</p>
+        <div class="col">
+          <span class="k">REPETITION</span>
+          <h3>Headers repeat</h3>
+          <p>A table running over three pages carries its header onto each one, so page three is not
+          a wall of numbers with no columns.</p>
         </div>
-        <div class="step">
-          <div class="n">03 · TAKE IT</div>
-          <h3>PDF bytes, or a link that expires</h3>
-          <p>Stream the file straight into your response, or take a download URL valid for one hour.
-          Nothing is stored afterwards.</p>
+        <div class="col">
+          <span class="k">ORPHANS</span>
+          <h3>Headings stay put</h3>
+          <p>A heading is never stranded at the foot of a page with its content on the next.</p>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="cell c4" id="keys">
-    <span class="tag">06 · FREE KEY</span>
-    <div class="big">100<small> renders/month, free</small></div>
-    <p class="sub sans" style="margin:6px 0 0;font-size:.8rem">One email, one key, no card. Or try
-    10 renders a day with no signup at all. Lost your key? Ask again with the same email.</p>
-    <form id="keyform" class="keyform" autocomplete="off">
-      <input id="email" type="email" required placeholder="you@example.com" aria-label="Your email">
-      <button type="submit">GET KEY</button>
-    </form>
-    <div id="keyout" class="keyout">Your key appears here, instantly.</div>
-    <div class="foot">
-      <div class="rule"></div>
-<pre><span class="cm"># or from the terminal</span>
-<span class="k">curl</span> -X POST …/v1/keys \
-  -d <span class="s">'{"email":"you@example.com"}'</span></pre>
+  <hr class="rule">
+
+  <!-- ── MCP. The reason the product exists. ── -->
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">03</span>
+        <h2>Built for agents, not just for people</h2>
+        <p>Remote over HTTP, or local over stdio</p>
+      </div>
+      <div class="cols cols-2">
+        <div class="col">
+          <span class="k">REMOTE</span>
+          <h3>Nothing to install</h3>
+          <p>Point any MCP client at <code>https://mintpdf.dev/mcp</code> over streamable HTTP.
+          Two tools: <code>generate_pdf</code> and <code>pdf_from_url</code>.</p>
+        </div>
+        <div class="col">
+          <span class="k">LOCAL</span>
+          <h3>One line, no key</h3>
+          <p><code>npx -y mintpdf-mcp</code> starts the stdio server. It works immediately on the
+          anonymous tier, so nothing needs configuring to try it.</p>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <div class="cell c4">
-    <span class="tag">07 · OPTIONS</span>
-    <table class="spec">
-      <tr><td>format</td><td>A4 · Letter · Legal · A3 · A5</td></tr>
-      <tr><td>margin</td><td>any, e.g. "18mm"</td></tr>
-      <tr><td>landscape</td><td>true / false</td></tr>
-      <tr><td>header / footer</td><td>text on every page</td></tr>
-      <tr><td>pageNumbers</td><td>"3 / 7" in footer</td></tr>
-      <tr><td>engine</td><td>Chromium. Your CSS works</td></tr>
-    </table>
-  </div>
+  <hr class="rule">
 
-  <div class="cell c4" id="pricing">
-    <span class="tag">08 · PRICE</span>
-    <div class="big sans">Free<small> · 100 renders/month</small></div>
-    <ul class="flat sans">
-      <li>REST API and MCP server, both included</li>
-      <li>Every option: sizes, margins, headers, your own CSS</li>
-      <li>No card, no seats, no sales calls</li>
-    </ul>
-    <div class="tierline"></div>
-    <table class="spec tiers">
-      <tr><td>Solo</td><td><b>$19</b> /mo</td><td>3,000 renders/month</td></tr>
-      <tr><td>Team</td><td><b>$49</b> /mo</td><td>12,000 renders/month</td></tr>
-      <tr><td>Scale</td><td><b>$129</b> /mo</td><td>50,000 renders/month</td></tr>
-    </table>
-    <form id="upform" class="keyform" autocomplete="off">
-      <select id="uptier" aria-label="Plan">
-        <option value="solo">Solo</option>
-        <option value="team">Team</option>
-        <option value="scale">Scale</option>
-      </select>
-      <input id="upkey" type="text" required placeholder="pm_… your key" aria-label="Your API key">
-      <button type="submit">UPGRADE</button>
-    </form>
-    <div id="upout" class="keyout foot">Upgrades the key you already have. No seats, no sales calls,
-    cancel anytime.</div>
-  </div>
+  <!-- ── Options + retention, as a spec table rather than more cards. ── -->
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">04</span>
+        <h2>What you can send, and what happens after</h2>
+      </div>
+      <table class="spec">
+        <tr><td>send</td><td>Markdown, HTML, or a public URL</td></tr>
+        <tr><td>get back</td><td>PDF bytes, or a link that expires in an hour</td></tr>
+        <tr><td>page setup</td><td>A4 · Letter · Legal · A3 · A5, landscape, custom margins</td></tr>
+        <tr><td>furniture</td><td>Header and footer text, page numbers</td></tr>
+        <tr><td>rich content</td><td>Mermaid diagrams and LaTeX maths render to vectors, not images</td></tr>
+        <tr><td>retention</td><td>Files auto-delete after one hour. No accounts, no document storage,
+            and what you render is not logged.</td></tr>
+        <tr><td>self-hosting</td><td>MIT licensed, container published at
+            <code>ghcr.io/trendtweekers/mintpdf</code></td></tr>
+      </table>
+    </div>
+  </section>
 
-  <div class="cell c12">
-    <span class="tag">09 · RETENTION</span>
-    <p class="sub sans" style="margin:0">Your documents are rendered and forgotten.
-    <b style="color:var(--ink)">Generated files auto-delete after one hour.</b> No accounts, no
-    document storage, no tracking of what you render. Requests to private and internal addresses
-    are blocked at the browser layer.</p>
-  </div>
-</div>
+  <hr class="rule">
+
+  <!-- ── Price. Four tiers, flat, no "most popular" badge. ── -->
+  <section class="sec" id="pricing">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">05</span>
+        <h2>Priced by what you render</h2>
+        <p>Renders per month</p>
+      </div>
+      <div class="tiers">
+        <div class="tier is-free">
+          <div class="nm">Free</div>
+          <div class="pr">$0</div>
+          <div class="vol">100 / month, or 10 a day with no account</div>
+        </div>
+        <div class="tier">
+          <div class="nm">Solo</div>
+          <div class="pr">$19 <span>/mo</span></div>
+          <div class="vol">3,000 / month</div>
+        </div>
+        <div class="tier">
+          <div class="nm">Team</div>
+          <div class="pr">$49 <span>/mo</span></div>
+          <div class="vol">12,000 / month</div>
+        </div>
+        <div class="tier">
+          <div class="nm">Scale</div>
+          <div class="pr">$129 <span>/mo</span></div>
+          <div class="vol">50,000 / month</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ── Key + upgrade. The ask comes last, after the product has worked. ── -->
+  <section class="sec" id="keys">
+    <div class="wrap">
+      <div class="cols cols-2">
+        <div class="col">
+          <span class="k">FREE KEY</span>
+          <h3>One email, one key, no card</h3>
+          <p style="margin-bottom:14px">Raises the anonymous 10 a day to 100 a month. Lost your key?
+          Ask again with the same email.</p>
+          <form id="keyform" class="keyform" autocomplete="off">
+            <input id="email" type="email" required placeholder="you@example.com" aria-label="Email address">
+            <button class="btn" type="submit">Get a key</button>
+          </form>
+          <div class="out" id="keyout"></div>
+        </div>
+        <div class="col">
+          <span class="k">UPGRADE</span>
+          <h3>Already have a key</h3>
+          <p style="margin-bottom:14px">Paste it, pick a tier, and checkout carries it across. The key
+          is the account, so nothing else changes.</p>
+          <form id="upform" class="keyform" autocomplete="off">
+            <input id="upkey" type="text" required placeholder="pm_…" aria-label="Your API key">
+            <select id="uptier" aria-label="Plan">
+              <option value="solo">Solo · $19</option>
+              <option value="team">Team · $49</option>
+              <option value="scale">Scale · $129</option>
+            </select>
+            <button class="btn" type="submit">Checkout</button>
+          </form>
+          <div class="out" id="upout"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<hr class="rule">
 
 <footer>
-  <span>MintPDF · questions or bug reports welcome</span>
-  <span class="fnav">
+  <div class="wrap">
+    <span>MintPDF</span>
     <a href="/guides">Guides</a>
-    <a href="/sitemap.xml">Sitemap</a>
-    <a href="https://x.com/Peterhallanderr"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-2px"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> @Peterhallanderr</a>
-    <a href="https://github.com/TrendTweekers/mintpdf">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:-2px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-      Source (MIT)</a>
-  </span>
+    <a href="/markdown-to-pdf">Free converter</a>
+    <a href="/openapi.json">OpenAPI</a>
+    <a href="/llms.txt">llms.txt</a>
+    <a href="https://github.com/TrendTweekers/mintpdf">Source (MIT)</a>
+    <span class="sp">Rendered with headless Chromium. Files deleted after one hour.</span>
+  </div>
 </footer>
 
 <script>
