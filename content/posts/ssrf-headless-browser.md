@@ -1,7 +1,7 @@
 ---
 slug: ssrf-headless-browser
-title: Rendering user HTML turns your server into an SSRF proxy
-description: Blocking private IPs on the submitted URL covers one request out of many. The second layer that catches every subresource, the caching asymmetry that beats DNS rebinding, and six IPv6 parsing bugs, four of which were in my own code.
+title: Rendering user HTML makes your server an SSRF proxy
+description: Blocking private IPs on the submitted URL covers one request out of many. The second layer, the caching asymmetry that beats DNS rebinding, and six IPv6 traps.
 date: 2026-08-12
 ---
 

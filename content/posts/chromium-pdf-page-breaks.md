@@ -1,7 +1,7 @@
 ---
 slug: chromium-pdf-page-breaks
 title: Headless Chrome splits your PDFs in the wrong places
-description: Chromium's default fragmentation cuts code blocks, tables and headings in half across page boundaries. The CSS that fixes it, what it costs, and one common rule that silently breaks Markdown tables.
+description: Chromium cuts code blocks, tables and headings in half at page boundaries. The print CSS that fixes it, and the rule that silently breaks Markdown tables.
 date: 2026-08-09
 ---
 

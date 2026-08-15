@@ -100,7 +100,7 @@ const CONFIGS: Record<string, ConverterConfig> = {
     h1: "JSON to PDF",
     title: "JSON to PDF | Free online converter, no signup",
     description:
-      "Convert JSON to a readable PDF online. An array of objects becomes a proper table, anything else stays as formatted JSON. Free, no signup, no watermark.",
+      "Convert JSON to a readable PDF online. An array of objects becomes a proper table, anything else stays as formatted JSON. Free, no signup.",
     inputLabel: "Your JSON",
     transform: "jsonToMarkdown",
     sample: `[
@@ -234,6 +234,11 @@ export function renderConverter(
 <meta property="og:description" content="${cfg.description}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${baseUrl}/${cfg.slug}">
+<meta property="og:image" content="${baseUrl}/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${baseUrl}/og.png">
 <link rel="icon" href="${favicon}">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"${cfg.h1} converter",

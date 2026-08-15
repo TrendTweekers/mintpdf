@@ -1,7 +1,7 @@
 ---
 slug: pdf-github-action
 title: How to generate a PDF in a GitHub Action
-description: Two ways to turn Markdown into a PDF from CI, what installing Chromium on a runner actually costs, and the zero-dependency composite action pattern that avoids vendoring node_modules.
+description: Two ways to turn Markdown into a PDF from CI, what installing Chromium on a runner really costs, and the zero-dependency composite action pattern.
 date: 2026-08-10
 ---
 

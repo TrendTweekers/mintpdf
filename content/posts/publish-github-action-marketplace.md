@@ -1,7 +1,7 @@
 ---
 slug: publish-github-action-marketplace
-title: Publishing a GitHub Action to the Marketplace, including the parts that surprised me
-description: The real sequence for listing an action, the checkbox that stays locked, the tag selection that silently resets, the naming rules that reject more than you expect, and the floating major tag you have to maintain forever.
+title: Publishing a GitHub Action to the Marketplace
+description: Listing a GitHub Action: the checkbox that stays locked, the tag selection that silently resets, and the naming rules that reject more than you expect.
 date: 2026-08-10
 ---
 

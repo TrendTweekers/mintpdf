@@ -155,6 +155,9 @@ function esc(s: string): string {
 }
 
 function shell(opts: { title: string; description: string; canonical: string; body: string }): string {
+  /* The share card lives at the site root, and the canonical is always absolute, so derive the
+     origin from it rather than threading baseUrl through every caller. */
+  const origin = new URL(opts.canonical).origin;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(opts.title)}</title>
@@ -164,7 +167,11 @@ function shell(opts: { title: string; description: string; canonical: string; bo
 <meta property="og:description" content="${esc(opts.description)}">
 <meta property="og:type" content="article">
 <meta property="og:url" content="${esc(opts.canonical)}">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="${origin}/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${origin}/og.png">
 <link rel="icon" href="${FAVICON}">
 <style>${STYLE}</style>${ANALYTICS}</head><body>
 <div class="wrap">

@@ -1,7 +1,7 @@
 ---
 slug: mcp-server-discoverable
-title: Your MCP server is invisible: the files agents actually look for
-description: Shipping an MCP server is not the same as being discoverable. The well-known documents, Link headers, content negotiation and WebMCP that agent tooling checks for, and the one I refused to publish.
+title: Why agent tooling cannot find your MCP server
+description: Shipping an MCP server is not the same as being discoverable. The well-known files, Link headers and content negotiation that agent tooling checks for.
 date: 2026-08-09
 ---
 

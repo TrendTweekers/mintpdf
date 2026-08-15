@@ -104,12 +104,17 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Markdown to PDF | Free online converter, no signup</title>
-<meta name="description" content="Convert Markdown to a polished PDF online. Tables, code blocks, Mermaid diagrams and LaTeX maths, with page breaks that do not cut content in half. Free, no signup, no watermark.">
+<meta name="description" content="Convert Markdown to a polished PDF online. Tables, code blocks, Mermaid diagrams and LaTeX maths, with page breaks that never cut content in half.">
 <link rel="canonical" href="${baseUrl}/markdown-to-pdf">
 <meta property="og:title" content="Markdown to PDF | Free online converter, no signup">
 <meta property="og:description" content="Paste Markdown, get a styled PDF. Diagrams, maths and tables included. No signup, no watermark.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${baseUrl}/markdown-to-pdf">
+<meta property="og:image" content="${baseUrl}/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${baseUrl}/og.png">
 <link rel="icon" href="${favicon}">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"Markdown to PDF converter",
