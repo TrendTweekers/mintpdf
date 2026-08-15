@@ -74,3 +74,28 @@ identical submissions from a new account across many sites is the pattern modera
 
 **Expected yield:** ten to fourteen referring domains if worked end to end, against the 22 dofollow
 that the weakest page-one competitor holds. See `docs/link-targets.md` for how that bar was measured.
+
+---
+
+## What I could do without a browser (2026-08-14)
+
+Anything that accepts a GitHub PR or issue, which is a real channel and not a form.
+
+**Done:**
+- **OneOffTech/awesome-pdf** — [issue #65](https://github.com/OneOffTech/awesome-pdf/issues/65),
+  "Creation and production". They take an issue, not a PR.
+- **py-pdf/awesome-pdf** — [PR #47](https://github.com/py-pdf/awesome-pdf/pull/47), Generators
+  section. Note the repo has not been pushed since 2024-08, so this may sit.
+
+**Blocked by a rule, worth a diary entry:**
+- **awesome-selfhosted** (312,747 stars, the big one). We qualify on licence and container, and the
+  directly comparable Gotenberg is already listed. But their PR checklist requires *"first released
+  more than 4 months ago"* and MintPDF is five days old. **Retry from ~2026-12-09.** Submissions go
+  as a YAML file to `awesome-selfhosted/awesome-selfhosted-data`, not to the list repo.
+
+**Not worth it:** devtoolsd/awesome-devtools has no PDF or API sections at all; mundimark and
+BubuAnabelas markdown lists are about editors and syntax rather than converters.
+
+Everything else on the queue above needs an account and a form, so it needs a human. I will not
+script those: it is the pattern that got the Stack Overflow account IP-blocked, and the accounts are
+Peter's to keep.
