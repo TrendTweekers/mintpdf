@@ -166,6 +166,34 @@ async function getBrowser(): Promise<Browser> {
 }
 
 /**
+ * Chromium is ~800MB of the container's memory once launched (measured: a bare Node process on
+ * this image is ~113MB, one render brings the tree to ~900MB, and it never drops on its own).
+ * `--max-old-space-size` would not touch this — Chromium is a separate process tree, not V8 heap —
+ * so the only real lever is closing the browser after it sits unused for a while and relaunching
+ * lazily on the next render. `.unref()` so this timer can never hold the process open by itself,
+ * matching the cleanup interval in store.ts.
+ */
+const BROWSER_IDLE_MS = Math.max(0, Number(process.env.BROWSER_IDLE_MS ?? 5 * 60_000));
+let idleCloseTimer: NodeJS.Timeout | null = null;
+
+function clearIdleClose(): void {
+  if (idleCloseTimer) {
+    clearTimeout(idleCloseTimer);
+    idleCloseTimer = null;
+  }
+}
+
+function scheduleIdleClose(): void {
+  clearIdleClose();
+  if (BROWSER_IDLE_MS <= 0) return;
+  idleCloseTimer = setTimeout(() => {
+    idleCloseTimer = null;
+    // Re-check at fire time, not just at schedule time: a render started in between should win.
+    if (active === 0) void closeBrowser();
+  }, BROWSER_IDLE_MS).unref();
+}
+
+/**
  * Render admission control.
  *
  * Every render is a Chromium tab, so concurrency is bounded by memory long before it is bounded by
@@ -201,6 +229,8 @@ export function renderLoad(): { active: number; queued: number; max: number } {
 }
 
 async function acquireSlot(): Promise<void> {
+  // A render is about to start (or queue to start): the browser must not close out from under it.
+  clearIdleClose();
   if (active < MAX_CONCURRENT) {
     active += 1;
     return;
@@ -228,6 +258,7 @@ function releaseSlot(): void {
     return;
   }
   active -= 1;
+  if (active === 0) scheduleIdleClose();
 }
 
 function headerFooterTemplate(text: string | undefined, pageNumbers: boolean, isFooter: boolean): string {
