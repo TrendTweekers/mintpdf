@@ -379,7 +379,7 @@ export function renderConverter(
   </div>
 </div>
 <footer>
-  <span>MintPDF · questions or bug reports welcome</span>
+  <span>MintPDF · questions or bug reports to <a href="mailto:hello@mintpdf.dev">hello@mintpdf.dev</a></span>
   <span class="fnav">
     <a href="/">API</a><a href="/guides">Guides</a><a href="/llms.txt">llms.txt</a>
     <a href="https://github.com/TrendTweekers/mintpdf">Source (MIT)</a>
