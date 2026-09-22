@@ -64,8 +64,16 @@ export async function createCheckout(opts: {
 }
 
 /**
- * Standard Webhooks signature check (the scheme Polar uses).
- * Signed content is `id.timestamp.body`; the secret is base64 after the `whsec_` prefix.
+ * Webhook signature check. Signed content is `id.timestamp.body` in both schemes Polar uses; they
+ * differ only in how the secret becomes the HMAC key:
+ *
+ *   standard  the Standard Webhooks spec: base64-decode whatever follows `whsec_`
+ *   legacy    the whole secret string, `whsec_` prefix included, as raw UTF-8 bytes
+ *
+ * An endpoint's scheme is fixed when Polar creates it (`uses_standard_webhook_signature`) and
+ * cannot be changed afterwards, so accept either. Checking only the standard one silently rejected
+ * every delivery to this endpoint for a month: 109 attempts, 109 x 401, until Polar disabled the
+ * endpoint outright. A paying customer would have been charged and never upgraded.
  */
 export function verifyWebhook(rawBody: string, headers: Record<string, unknown>): boolean {
   if (!WEBHOOK_SECRET) return false;
@@ -78,17 +86,20 @@ export function verifyWebhook(rawBody: string, headers: Record<string, unknown>)
   const age = Math.abs(Date.now() / 1000 - Number(timestamp));
   if (!Number.isFinite(age) || age > 300) return false;
 
-  const secretBytes = Buffer.from(WEBHOOK_SECRET.replace(/^whsec_/, ""), "base64");
-  const expected = createHmac("sha256", secretBytes)
-    .update(`${id}.${timestamp}.${rawBody}`)
-    .digest("base64");
+  const signed = `${id}.${timestamp}.${rawBody}`;
+  const expected = [
+    Buffer.from(WEBHOOK_SECRET.replace(/^whsec_/, ""), "base64"), // standard
+    Buffer.from(WEBHOOK_SECRET, "utf8"), // legacy
+  ].map((key) => createHmac("sha256", key).update(signed).digest("base64"));
 
   // Header may carry several space-separated versioned signatures.
   return signatureHeader.split(" ").some((part) => {
     const sig = part.startsWith("v1,") ? part.slice(3) : part;
     const a = Buffer.from(sig);
-    const b = Buffer.from(expected);
-    return a.length === b.length && timingSafeEqual(a, b);
+    return expected.some((e) => {
+      const b = Buffer.from(e);
+      return a.length === b.length && timingSafeEqual(a, b);
+    });
   });
 }
 
