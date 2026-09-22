@@ -89,6 +89,22 @@ app.addHook("onRequest", async (req, reply) => {
   }
 });
 
+/**
+ * A trailing slash on any real route (e.g. /markdown-to-pdf/) 404'd instead of resolving, because
+ * neither Fastify's router nor @fastify/static treat it as the same URL by default. External
+ * directories and old sitemaps commonly append the slash, and GSC surfaced this as real "Not
+ * found (404)" errors on pages that exist and rank. 301 to the slash-free canonical rather than
+ * silently serving both, so there is exactly one indexable URL per page, not two duplicates.
+ */
+app.addHook("onRequest", async (req, reply) => {
+  if (req.method !== "GET") return;
+  const [path, query] = req.url.split("?");
+  if (path.length > 1 && path.endsWith("/")) {
+    const target = path.replace(/\/+$/, "") + (query ? `?${query}` : "");
+    return reply.code(301).redirect(target);
+  }
+});
+
 /** Daily salted hash of the IP: enough to count unique visitors, useless for identifying anyone. */
 function visitorHash(ip: string): string {
   const salt = new Date().toISOString().slice(0, 10) + (process.env.ADMIN_KEY ?? "mintpdf");
