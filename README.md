@@ -298,3 +298,4 @@ The parts that took the actual work are the unglamorous ones:
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
+<!-- test -->
