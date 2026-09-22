@@ -118,6 +118,8 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Markdown to PDF | Free MD to PDF converter, no signup">
+<meta name="twitter:description" content="Paste Markdown, get a styled PDF. Diagrams, maths and tables included. No signup, no watermark.">
 <meta name="twitter:image" content="${baseUrl}/og.png">
 <link rel="icon" href="${favicon}">
 <script type="application/ld+json">

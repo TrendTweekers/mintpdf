@@ -88,15 +88,23 @@ export function dailyLimitFor(tier: Tier): number {
  * out of band until verified email recovery exists.
  */
 export function createKey(email: string): { key: string; tier: Tier; paidKeyExists: boolean } {
-  const key = "pm_" + randomBytes(24).toString("base64url");
   const previous = findKeyByEmail(email);
+
+  // Hand back the existing FREE key, which is what the site promises ("lost your key? ask again
+  // with the same email"). It also closes a quota hole: minting a new key per request gave one
+  // address unlimited 100/month allowances just by resubmitting it, since old keys stay valid.
+  // A PAID key is still never returned, for the takeover reason described above.
+  if (previous && previous.tier === "free") {
+    return { key: previous.key, tier: "free", paidKeyExists: false };
+  }
+
+  const key = "pm_" + randomBytes(24).toString("base64url");
   db.prepare("INSERT INTO api_keys (key, email, created_at, tier) VALUES (?, ?, ?, 'free')").run(
     key,
     email,
     Date.now(),
   );
-  const wasPaid = previous ? previous.tier !== "free" : false;
-  return { key, tier: "free", paidKeyExists: wasPaid };
+  return { key, tier: "free", paidKeyExists: previous ? previous.tier !== "free" : false };
 }
 
 export interface KeyRecord {

@@ -238,6 +238,8 @@ export function renderConverter(
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${cfg.title}">
+<meta name="twitter:description" content="${cfg.description}">
 <meta name="twitter:image" content="${baseUrl}/og.png">
 <link rel="icon" href="${favicon}">
 <script type="application/ld+json">

@@ -20,10 +20,25 @@ const BASE_URL = process.env.BASE_URL ?? `http://localhost:${PORT}`;
 /** Set once a custom domain is live; every other host 301s here so early links keep their value. */
 const CANONICAL_HOST = process.env.CANONICAL_HOST ?? "";
 
+/**
+ * How many proxy hops sit in front of this process.
+ *
+ * `trustProxy: true` trusts the WHOLE X-Forwarded-For chain and takes its leftmost entry, which the
+ * client writes. Every per-IP limit here (the anonymous render cap, the free-key cap) then falls to
+ * one extra header: `X-Forwarded-For: 10.0.0.<n>` buys a fresh bucket each time, so the free tier
+ * and the signup cap become unlimited, and each bypassed render is a real Chromium tab.
+ *
+ * A hop count instead trusts only the addresses the edge itself appended, so a forged prefix is
+ * ignored. Railway fronts this with a single proxy, hence 1. It stays an env var because guessing
+ * too high re-opens the bypass and guessing too low buckets every visitor together, and that needs
+ * to be fixable without a redeploy.
+ */
+const TRUST_PROXY = process.env.TRUST_PROXY ?? "1";
+
 const app = Fastify({
   logger: true,
   bodyLimit: 5 * 1024 * 1024,
-  trustProxy: true,
+  trustProxy: /^\d+$/.test(TRUST_PROXY) ? Number(TRUST_PROXY) : TRUST_PROXY,
 });
 
 // Keep the raw JSON around: webhook signatures are computed over the exact bytes sent.
@@ -31,8 +46,10 @@ app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, 
   (req as unknown as { rawBody?: string }).rawBody = body as string;
   try {
     done(null, body === "" ? {} : JSON.parse(body as string));
-  } catch (err) {
-    done(err as Error, undefined);
+  } catch {
+    // Without an explicit status this surfaces as a 500, so a caller's JSON typo would look like
+    // a server fault and pollute any 5xx-based health alerting. It is a client error.
+    done(Object.assign(new Error("invalid JSON body"), { statusCode: 400 }), undefined);
   }
 });
 
@@ -138,6 +155,26 @@ app.post<{ Body: { path?: string; ref?: string } }>("/v1/beacon", async (req, re
   );
 });
 
+const PAPER_FORMATS = ["A4", "Letter", "Legal", "A3", "A5"];
+/** CSS lengths Chromium's print path accepts for a margin. */
+const MARGIN_PATTERN = /^\d+(\.\d+)?(mm|cm|in|px|pt)$/;
+
+/** Returns a human-readable reason the options are unusable, or null when they are fine. */
+function validatePdfOptions(o: PdfOptions): string | null {
+  if (o.format !== undefined && !PAPER_FORMATS.includes(o.format)) {
+    return `format must be one of ${PAPER_FORMATS.join(", ")}`;
+  }
+  if (o.scale !== undefined) {
+    if (typeof o.scale !== "number" || !Number.isFinite(o.scale) || o.scale < 0.1 || o.scale > 2) {
+      return "scale must be a number between 0.1 and 2";
+    }
+  }
+  if (o.margin !== undefined && !MARGIN_PATTERN.test(String(o.margin))) {
+    return 'margin must be a CSS length such as "18mm"';
+  }
+  return null;
+}
+
 interface PdfBody extends PdfOptions {
   html?: string;
   markdown?: string;
@@ -242,6 +279,14 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
   if (sources.length !== 1) {
     return reply.code(400).send({ error: "provide exactly one of html, markdown, url" });
   }
+
+  // Check the paper options before Chromium sees them. Unvalidated, these reach Puppeteer and come
+  // back as 500s quoting its internals ("scale is outside of [0.1 - 2] range", or a bare TypeError
+  // for an unknown format), which reads as our fault rather than a bad request. The MCP route
+  // already validates the same fields with zod; this keeps the REST route honest about its own
+  // documented enum too, since Chromium silently accepts sizes we do not advertise.
+  const optionError = validatePdfOptions(body);
+  if (optionError) return reply.code(400).send({ error: optionError });
 
   let pdf: Buffer;
   try {
