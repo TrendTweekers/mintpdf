@@ -38,10 +38,21 @@ const CANONICAL_HOST = process.env.CANONICAL_HOST ?? "";
  */
 const TRUST_PROXY = process.env.TRUST_PROXY ?? "true";
 
+/**
+ * Fastify takes a boolean, a hop count, or a comma-separated list of trusted proxy addresses.
+ * A bare string goes down the address-list path, so passing "true" through makes it try to parse
+ * `true` as an IP and throw at startup, taking the whole service down. Map the words explicitly.
+ */
+function parseTrustProxy(v: string): boolean | number | string {
+  if (v === "true") return true;
+  if (v === "false") return false;
+  return /^\d+$/.test(v) ? Number(v) : v;
+}
+
 const app = Fastify({
   logger: true,
   bodyLimit: 5 * 1024 * 1024,
-  trustProxy: /^\d+$/.test(TRUST_PROXY) ? Number(TRUST_PROXY) : TRUST_PROXY,
+  trustProxy: parseTrustProxy(TRUST_PROXY),
 });
 
 // Keep the raw JSON around: webhook signatures are computed over the exact bytes sent.
