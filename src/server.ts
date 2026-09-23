@@ -636,6 +636,29 @@ app.get("/robots.txt", async (_req, reply) =>
   ),
 );
 
+/**
+ * TEMPORARY. Shows how the edge presents the client address, so TRUST_PROXY can be set from
+ * evidence rather than from contradictory community answers about Railway's proxy. Admin-gated and
+ * 404s without the key, exactly like /admin/stats. Remove once the value is confirmed.
+ */
+app.get<{ Querystring: { key?: string } }>("/admin/whoami", async (req, reply) => {
+  const secret = process.env.ADMIN_KEY;
+  if (!secret || req.query.key !== secret) return reply.code(404).send({ error: "not found" });
+  return reply.send({
+    derived_req_ip: req.ip,
+    derived_ips_chain: (req as unknown as { ips?: string[] }).ips ?? null,
+    socket_remote_address: req.socket.remoteAddress,
+    trust_proxy_setting: TRUST_PROXY,
+    headers: {
+      "x-forwarded-for": req.headers["x-forwarded-for"] ?? null,
+      "x-real-ip": req.headers["x-real-ip"] ?? null,
+      "x-envoy-external-address": req.headers["x-envoy-external-address"] ?? null,
+      "cf-connecting-ip": req.headers["cf-connecting-ip"] ?? null,
+      "true-client-ip": req.headers["true-client-ip"] ?? null,
+    },
+  });
+});
+
 app.get("/health", async () => ({ ok: true }));
 
 const shutdown = async () => {
