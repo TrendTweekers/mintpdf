@@ -21,19 +21,22 @@ const BASE_URL = process.env.BASE_URL ?? `http://localhost:${PORT}`;
 const CANONICAL_HOST = process.env.CANONICAL_HOST ?? "";
 
 /**
- * How many proxy hops sit in front of this process.
+ * How the client address is derived from the forwarding chain. `true` means trust the chain and
+ * take its leftmost entry.
  *
- * `trustProxy: true` trusts the WHOLE X-Forwarded-For chain and takes its leftmost entry, which the
- * client writes. Every per-IP limit here (the anonymous render cap, the free-key cap) then falls to
- * one extra header: `X-Forwarded-For: 10.0.0.<n>` buys a fresh bucket each time, so the free tier
- * and the signup cap become unlimited, and each bypassed render is a real Chromium tab.
+ * That is normally unsafe, because the leftmost entry is whatever the client wrote. It is correct
+ * *here* because Railway's edge strips any client-supplied X-Forwarded-For before forwarding.
+ * Measured on production 2026-09-23: a request sent with `X-Forwarded-For: 203.0.113.77` arrived as
+ * `x-forwarded-for: 31.135.199.192, 152.233.43.33`, the forged value gone entirely, leftmost equal
+ * to the real client IP and to x-real-ip.
  *
- * A hop count instead trusts only the addresses the edge itself appended, so a forged prefix is
- * ignored. Railway fronts this with a single proxy, hence 1. It stays an env var because guessing
- * too high re-opens the bypass and guessing too low buckets every visitor together, and that needs
- * to be fixable without a redeploy.
+ * Do not "harden" this to a hop count without re-measuring. A hop count reads from the right, and
+ * the right-hand entry is a Railway internal address that rotates per request (.33/.34 observed
+ * across three consecutive calls). Keying the per-IP limits on that silently hands each visitor a
+ * fresh quota bucket whenever routing changes, which is worse than the problem it looks like it
+ * solves. An env var stays available in case the platform's behaviour changes.
  */
-const TRUST_PROXY = process.env.TRUST_PROXY ?? "1";
+const TRUST_PROXY = process.env.TRUST_PROXY ?? "true";
 
 const app = Fastify({
   logger: true,
@@ -635,29 +638,6 @@ app.get("/robots.txt", async (_req, reply) =>
       `Sitemap: ${BASE_URL}/sitemap.xml\n`,
   ),
 );
-
-/**
- * TEMPORARY. Shows how the edge presents the client address, so TRUST_PROXY can be set from
- * evidence rather than from contradictory community answers about Railway's proxy. Admin-gated and
- * 404s without the key, exactly like /admin/stats. Remove once the value is confirmed.
- */
-app.get<{ Querystring: { key?: string } }>("/admin/whoami", async (req, reply) => {
-  const secret = process.env.ADMIN_KEY;
-  if (!secret || req.query.key !== secret) return reply.code(404).send({ error: "not found" });
-  return reply.send({
-    derived_req_ip: req.ip,
-    derived_ips_chain: (req as unknown as { ips?: string[] }).ips ?? null,
-    socket_remote_address: req.socket.remoteAddress,
-    trust_proxy_setting: TRUST_PROXY,
-    headers: {
-      "x-forwarded-for": req.headers["x-forwarded-for"] ?? null,
-      "x-real-ip": req.headers["x-real-ip"] ?? null,
-      "x-envoy-external-address": req.headers["x-envoy-external-address"] ?? null,
-      "cf-connecting-ip": req.headers["cf-connecting-ip"] ?? null,
-      "true-client-ip": req.headers["true-client-ip"] ?? null,
-    },
-  });
-});
 
 app.get("/health", async () => ({ ok: true }));
 
