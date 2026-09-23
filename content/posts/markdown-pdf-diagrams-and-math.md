@@ -1,7 +1,7 @@
 ---
 slug: markdown-pdf-diagrams-and-math
-title: Rendering Mermaid diagrams and real math in a Markdown-to-PDF pipeline
-description: Most Markdown-to-PDF tools skip diagrams and equations entirely, or load a multi-megabyte client bundle on every request whether you use them or not. The two conditions that keep both fast, and the one syntax choice that stops your invoices from becoming a math problem.
+title: Mermaid diagrams and math in a Markdown-to-PDF API
+description: Diagrams and equations without loading megabytes on every render, and the inline-math syntax that stops a $9.00 price column being parsed as an equation.
 date: 2026-09-22
 ---
 

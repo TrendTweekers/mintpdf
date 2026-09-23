@@ -169,7 +169,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
   .apinudge a:hover { text-decoration:underline; }
   .preview { flex:1; border:1px solid var(--line); border-radius:8px; background:#fdfdf8;
              min-height:340px; display:flex; align-items:center; justify-content:center;
-             color:#8a8a80; font-size:.85rem; overflow:hidden; }
+             color:#726e64; font-size:.85rem; overflow:hidden; }
   .preview iframe { width:100%; height:100%; min-height:340px; border:none; }
   .keyform { display:flex; margin-top:10px; background:#0d0d0f; border:1px solid var(--line);
              border-radius:7px; overflow:hidden; transition:border-color .15s; max-width:420px; }

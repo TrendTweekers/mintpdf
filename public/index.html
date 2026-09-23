@@ -72,7 +72,7 @@
   --line-str: #2b2b32;   /* the fold line: structural, one step brighter */
   --ink:      #ededf0;
   --ink-dim:  #a1a1aa;
-  --mut:      #6e6e78;
+  --mut:      #8b8b95;
 
   /* One accent. Used for state and emphasis, never for decoration. */
   --acc:      #3ce0a5;
@@ -230,7 +230,7 @@ h1 em { font-style: normal; color: var(--mut); }
 /* The fold: a printed page always ends somewhere. */
 .paper .pf {
   display: flex; justify-content: space-between; margin-top: 14px; padding-top: 8px;
-  border-top: 1px solid #dededa; color: #9a9a94; font-size: 10.5px;
+  border-top: 1px solid #dededa; color: #70706b; font-size: 10.5px;
   font-family: var(--f-mono); letter-spacing: .04em;
 }
 
@@ -258,7 +258,7 @@ pre {
 code { font-family: var(--f-mono); }
 .k  { color: var(--acc); }
 .s  { color: #9ecbff; }
-.cm { color: #56606b; }
+.cm { color: #78848f; }
 
 /* ── Spec table: dense, aligned, no card ─────────────────────────────────── */
 .spec { width: 100%; border-collapse: collapse; font-size: 13.5px; }
@@ -561,7 +561,9 @@ footer .sp { margin-left: auto; }
   <div class="wrap">
     <span>MintPDF</span>
     <a href="/guides">Guides</a>
-    <a href="/markdown-to-pdf">Free converter</a>
+    <a href="/markdown-to-pdf">Markdown to PDF</a>
+    <a href="/json-to-pdf">JSON to PDF</a>
+    <a href="/csv-to-pdf">CSV to PDF</a>
     <a href="/openapi.json">OpenAPI</a>
     <a href="/llms.txt">llms.txt</a>
     <a href="https://github.com/TrendTweekers/mintpdf">Source (MIT)</a>

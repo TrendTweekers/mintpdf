@@ -284,7 +284,7 @@ export function renderConverter(
   .apinudge a:hover { text-decoration:underline; }
   .preview { flex:1; border:1px solid var(--line); border-radius:8px; background:#fdfdf8;
              min-height:320px; display:flex; align-items:center; justify-content:center;
-             color:#8a8a80; font-size:.85rem; overflow:hidden; }
+             color:#726e64; font-size:.85rem; overflow:hidden; }
   .preview iframe { width:100%; height:100%; min-height:320px; border:none; }
   .feats { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin-top:14px; }
   .feat { background:var(--cell); border:1px solid var(--line); border-radius:10px; padding:18px 20px; }

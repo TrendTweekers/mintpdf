@@ -73,7 +73,7 @@ export const STYLE = `
      Variable NAMES are unchanged so every page using them keeps working; only the
      values move. --raised is new, for the one-step-up surface the landing page uses. */
   :root { --bg:#0b0b0c; --cell:#101012; --raised:#16161a; --line:#1f1f24; --line-str:#2b2b32;
-          --ink:#ededf0; --mut:#6e6e78; --acc:#3ce0a5; --acc-ink:#04170f; }
+          --ink:#ededf0; --mut:#8b8b95; --acc:#3ce0a5; --acc-ink:#04170f; }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);line-height:1.7;
        font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -131,7 +131,7 @@ export const STYLE = `
   .card:hover{border-color:#2b2b32;text-decoration:none}
   .card h2{margin:0 0 6px;font-size:1.08rem;color:var(--ink)}
   .card p{margin:0;color:var(--mut);font-size:.92rem}
-  .card .d{color:#6e6e78;font-size:.72rem;margin-top:10px;letter-spacing:.06em}
+  .card .d{color:#8b8b95;font-size:.72rem;margin-top:10px;letter-spacing:.06em}
 
   .endnote{margin-top:34px;border-top:1px solid var(--line);padding-top:18px;color:var(--mut);
            font-size:.92rem}
@@ -154,7 +154,14 @@ function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
 }
 
-function shell(opts: { title: string; description: string; canonical: string; body: string }): string {
+function shell(opts: {
+  title: string;
+  description: string;
+  canonical: string;
+  body: string;
+  /** Optional JSON-LD, already serialised. Guides pass Article; the index passes nothing. */
+  schema?: string;
+}): string {
   /* The share card lives at the site root, and the canonical is always absolute, so derive the
      origin from it rather than threading baseUrl through every caller. */
   const origin = new URL(opts.canonical).origin;
@@ -175,6 +182,7 @@ function shell(opts: { title: string; description: string; canonical: string; bo
 <meta name="twitter:description" content="${esc(opts.description)}">
 <meta name="twitter:image" content="${origin}/og.png">
 <link rel="icon" href="${FAVICON}">
+${opts.schema ? `<script type="application/ld+json">${opts.schema}</script>` : ""}
 <style>${STYLE}</style>${ANALYTICS}</head><body>
 <div class="wrap">
   <div class="cell head">
@@ -223,15 +231,47 @@ export function renderIndex(baseUrl: string): string {
 }
 
 export function renderPost(post: Post, baseUrl: string): string {
+  /* Article markup: these pages carried og:type=article but no structured data at all, so they
+     published no author, no date and no freshness signal. */
+  const schema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    description: post.description,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: { "@type": "Person", name: "Peter Hallander" },
+    publisher: {
+      "@type": "Organization",
+      name: "MintPDF",
+      url: baseUrl,
+      logo: { "@type": "ImageObject", url: `${baseUrl}/og.png` },
+    },
+    image: `${baseUrl}/og.png`,
+    mainEntityOfPage: { "@type": "WebPage", "@id": `${baseUrl}/guides/${post.slug}` },
+  });
+
+  /* Guides previously linked only "up" to /guides and the converter, never sideways, so closely
+     related pages (page breaks and diagram rendering, say) shared no path between them. Derived
+     rather than hand-maintained so a new guide joins the cluster the moment it is added. */
+  const related = getPosts().filter((p) => p.slug !== post.slug).slice(0, 3);
+  const relatedHtml = related.length
+    ? `<div class="endnote"><strong>Related guides</strong><br>${related
+        .map((p) => `<a href="/guides/${p.slug}">${esc(p.title)}</a>`)
+        .join("<br>")}</div>`
+    : "";
+
   return shell({
     title: `${post.title} — MintPDF`,
     description: post.description,
     canonical: `${baseUrl}/guides/${post.slug}`,
+    schema,
     body: `<div class="cell"><span class="tag">GUIDE</span>
 <article><h1>${esc(post.title)}</h1>
 <div class="meta">${esc(post.date)}</div>${post.body}
 <div class="endnote">Try it without signing up: <code>curl -X POST ${baseUrl}/v1/pdf -d '{"markdown":"# Hello"}'</code><br>
 or add it to your MCP client with <code>npx -y mintpdf-mcp</code>. <a href="/">Full API reference →</a></div>
+${relatedHtml}
 </article></div>`,
   });
 }
