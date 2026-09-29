@@ -249,6 +249,20 @@ function rateLimit(req: { headers: Record<string, unknown>; ip: string }): Quota
   };
 }
 
+/**
+ * Seconds until the exhausted bucket refills. Quota keys are cut from the UTC clock
+ * (`toISOString()` sliced to a day or a month), so the reset is UTC midnight for the anonymous
+ * daily cap and the 1st of the next UTC month for a key's monthly allowance. Reporting the real
+ * boundary keeps a client's automatic retry from hammering a quota that has not moved.
+ */
+function secondsUntilQuotaReset(keyed: boolean): number {
+  const now = new Date();
+  const next = keyed
+    ? Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+    : Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  return Math.max(1, Math.ceil((next - now.getTime()) / 1000));
+}
+
 app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
   const quota = rateLimit(req);
   reply.header("x-ratelimit-remaining", String(Math.max(quota.remaining, 0)));
@@ -279,6 +293,20 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
     notifyOnce(
       `limit:${quota.keyed ? String(req.headers.authorization).slice(-8) : req.ip}`,
       `🚦 <b>Limit reached</b>\n${quota.keyed ? "a keyed user" : "an anonymous visitor"} hit the cap`,
+    );
+    /*
+     * The people who actually hit this cap are calling the API from code, so they never load the
+     * page and never see the "get a free key" panel: the JSON body is the only place the way out
+     * is written, and plenty of HTTP clients surface a status code while discarding the body.
+     * So put the same two facts in headers, where a logged request or a thrown error still shows
+     * them: when the quota comes back, and the URL that lifts it.
+     */
+    reply.header("retry-after", String(secondsUntilQuotaReset(quota.keyed)));
+    reply.header(
+      "link",
+      quota.keyed
+        ? `<${BASE_URL}/#pricing>; rel="help"; title="Move up a plan"`
+        : `<${BASE_URL}/v1/keys>; rel="help"; title="POST an email here for a free key, ${LIMITS.free}/month"`,
     );
     return reply.code(429).send({
       error: "daily limit reached",
