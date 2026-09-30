@@ -35,7 +35,7 @@ Options: `format` (A4, Letter, Legal, A3, A5), `landscape`, `margin`, `headerTex
 
 ## Limits and keys
 
-Works with no key at all for a few renders a day. A free key (email only, no card) raises it to 100
+Works with no key at all for a few renders a day. A free key (email only, no card) raises it to 1,000
 a month:
 
 ```bash

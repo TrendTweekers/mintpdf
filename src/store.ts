@@ -63,7 +63,7 @@ export type Tier = "free" | "solo" | "team" | "scale";
 export const LIMITS = {
   /** Anonymous is a rate limit (per IP, per day); keyed tiers are monthly quotas. */
   anonymousPerDay: Number(process.env.ANON_DAILY_LIMIT ?? 10),
-  free: Number(process.env.FREE_MONTHLY_LIMIT ?? 100),
+  free: Number(process.env.FREE_MONTHLY_LIMIT ?? 1000),
   solo: Number(process.env.SOLO_MONTHLY_LIMIT ?? 3000),
   team: Number(process.env.TEAM_MONTHLY_LIMIT ?? 12000),
   scale: Number(process.env.SCALE_MONTHLY_LIMIT ?? 50000),
@@ -92,7 +92,7 @@ export function createKey(email: string): { key: string; tier: Tier; paidKeyExis
 
   // Hand back the existing FREE key, which is what the site promises ("lost your key? ask again
   // with the same email"). It also closes a quota hole: minting a new key per request gave one
-  // address unlimited 100/month allowances just by resubmitting it, since old keys stay valid.
+  // address unlimited monthly allowances just by resubmitting it, since old keys stay valid.
   // A PAID key is still never returned, for the takeover reason described above.
   if (previous && previous.tier === "free") {
     return { key: previous.key, tier: "free", paidKeyExists: false };

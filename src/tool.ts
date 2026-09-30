@@ -62,7 +62,7 @@ Display maths uses \`$$ ... $$\` and inline maths uses \`\\( ... \\)\`.
 const FAQ = [
   {
     q: "Is it really free?",
-    a: "Yes. A few conversions a day need no account at all. A free key raises that to 100 a month and only asks for an email address. There is no card and no trial that expires.",
+    a: "Yes. A few conversions a day need no account at all. A free key raises that to 1,000 a month and only asks for an email address. There is no card and no trial that expires.",
   },
   {
     q: "Does the PDF have a watermark?",
@@ -251,7 +251,7 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
       </div>
       <div class="keybox" id="keybox">
         <p class="note" style="margin:0 0 8px">Out of free conversions for today. A free key raises it to
-        100 a month, no card:</p>
+        1,000 a month, no card:</p>
         <form class="keyform" id="keyform" autocomplete="off">
           <input id="email" type="email" required placeholder="you@example.com" aria-label="Your email">
           <button type="submit">GET KEY</button>

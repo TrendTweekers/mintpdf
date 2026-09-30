@@ -32,7 +32,7 @@
   "license": "https://opensource.org/licenses/MIT",
   "softwareVersion": "0.1.1",
   "offers": [
-    { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD", "description": "100 renders per month" },
+    { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD", "description": "1,000 renders per month" },
     { "@type": "Offer", "name": "Solo", "price": "19", "priceCurrency": "USD", "description": "3,000 renders per month",
       "priceSpecification": { "@type": "UnitPriceSpecification", "price": "19", "priceCurrency": "USD", "billingDuration": 1, "billingIncrement": 1, "unitCode": "MON" } },
     { "@type": "Offer", "name": "Team", "price": "49", "priceCurrency": "USD", "description": "12,000 renders per month",
@@ -525,7 +525,7 @@ footer .sp { margin-left: auto; }
         <div class="col">
           <span class="k">FREE KEY</span>
           <h3>One email, one key, no card</h3>
-          <p style="margin-bottom:14px">Raises the anonymous 10 a day to 100 a month. Lost your key?
+          <p style="margin-bottom:14px">Raises the anonymous 10 a day to 1,000 a month. Lost your key?
           Ask again with the same email.</p>
           <form id="keyform" class="keyform" autocomplete="off">
             <input id="email" type="email" required placeholder="you@example.com" aria-label="Email address">
@@ -753,7 +753,7 @@ footer .sp { margin-left: auto; }
           statusEl2.textContent = 'daily free limit reached';
           paperEl2.innerHTML = '<h4>That is the free limit for today</h4>' +
             '<p style="font-size:.8rem;margin:6px 0 0">Ten renders a day without an account. ' +
-            'A free key raises it to 100 a month: <a class="dl" href="#keys">get one here</a>.</p>';
+            'A free key raises it to 1,000 a month: <a class="dl" href="#keys">get one here</a>.</p>';
           return;
         }
         if (res.status === 503) {

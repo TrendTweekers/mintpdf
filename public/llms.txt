@@ -30,7 +30,7 @@ Free browser converter, no key and no signup: https://mintpdf.dev/markdown-to-pd
 
 ## Limits and pricing
 Anonymous: 10 renders/day per IP, no signup.
-Free key: 100 renders/month, email only, no card.
+Free key: 1,000 renders/month, email only, no card.
 Solo: $19/month for 3,000 renders/month.
 Team: $49/month for 12,000 renders/month.
 Scale: $129/month for 50,000 renders/month.
