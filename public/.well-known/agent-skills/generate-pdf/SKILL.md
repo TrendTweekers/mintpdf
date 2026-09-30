@@ -40,7 +40,7 @@ Tools: `generate_pdf` (html **or** markdown in) and `pdf_from_url` (public URL i
 
 ## Limits
 
-10 renders/day anonymously, 1,000/month with a free key (`POST /v1/keys` with an email, no card),
+3 renders/day anonymously, 100/month with a free key (`POST /v1/keys` with an email, no card),
 then 3,000/month on Solo ($19), 12,000 on Team ($49) and 50,000 on Scale ($129). Send the key as
 `Authorization: Bearer pm_…`.
 

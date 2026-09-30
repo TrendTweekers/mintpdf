@@ -31,8 +31,8 @@ For the MCP package, set it as the `MINTPDF_API_KEY` environment variable.
 
 | Tier | Limit |
 |---|---|
-| Anonymous | 10 renders/day per IP |
-| Free key | 1,000 renders/month |
+| Anonymous | 3 renders/day per IP |
+| Free key | 100 renders/month |
 | Solo ($19/month) | 3,000 renders/month |
 | Team ($49/month) | 12,000 renders/month |
 | Scale ($129/month) | 50,000 renders/month |

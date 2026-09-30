@@ -24,10 +24,10 @@ Then restart the client. That is the whole installation.
 **Node 18 or newer**, for `npx`. Nothing else.
 
 **No API key is required.** The server talks to the hosted API at `https://mintpdf.dev`, which allows
-10 renders a day per IP with no account. Do not prompt the user for credentials during setup: it will
+3 renders a day per IP with no account. Do not prompt the user for credentials during setup: it will
 work immediately without them.
 
-If the user asks for a higher limit, a free key (email only, no card) raises it to 1,000 a month:
+If the user asks for a higher limit, a free key (email only, no card) raises it to 100 a month:
 
 ```bash
 curl -X POST https://mintpdf.dev/v1/keys \

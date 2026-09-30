@@ -61,9 +61,11 @@ export type Tier = "free" | "solo" | "team" | "scale";
  * Prices live in Polar, not here. This is only the quota each tier grants.
  */
 export const LIMITS = {
-  /** Anonymous is a rate limit (per IP, per day); keyed tiers are monthly quotas. */
-  anonymousPerDay: Number(process.env.ANON_DAILY_LIMIT ?? 10),
-  free: Number(process.env.FREE_MONTHLY_LIMIT ?? 1000),
+  /** Anonymous is a rate limit (per IP, per day); keyed tiers are monthly quotas.
+   *  Keep free above anonymousPerDay x 30, or taking a key is a downgrade and nobody does it:
+   *  anon was once raised to 10/day with free left at 100, and every cap-hitter stayed anonymous. */
+  anonymousPerDay: Number(process.env.ANON_DAILY_LIMIT ?? 3),
+  free: Number(process.env.FREE_MONTHLY_LIMIT ?? 100),
   solo: Number(process.env.SOLO_MONTHLY_LIMIT ?? 3000),
   team: Number(process.env.TEAM_MONTHLY_LIMIT ?? 12000),
   scale: Number(process.env.SCALE_MONTHLY_LIMIT ?? 50000),

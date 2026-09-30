@@ -143,7 +143,7 @@ const CONFIGS: Record<string, ConverterConfig> = {
       { q: "Does it handle nested JSON?", a: "Yes, but not as a table. Nested or irregular data is rendered as indented, readable JSON, because flattening it into columns would quietly lose information." },
       { q: "Is there a size limit?", a: "The document sent for rendering is limited to 5MB, which is a very large amount of tabular JSON." },
       { q: "Do you store my data?", a: "The PDF is kept for one hour so you can download it, then deleted. The JSON itself is turned into a document in your browser. If the data is confidential, use a local tool instead." },
-      { q: "Is it free?", a: "Yes. A few conversions a day need no account, and a free key raises that to 1,000 a month with nothing but an email address." },
+      { q: "Is it free?", a: "Yes. A few conversions a day need no account, and a free key raises that to 100 a month with nothing but an email address." },
       { q: "Can I do this from code?", a: "Yes. Convert your JSON to Markdown or HTML and POST it to the API, which is exactly what this page does." },
     ],
   },
@@ -197,7 +197,7 @@ Doohickey,5,$3.50,"Bulk discount applies"`,
       { q: "What about semicolon-separated files?", a: "Not yet. Many European exports use semicolons, and support for that is worth adding. For now, replace the separators before pasting." },
       { q: "Will a wide table fit the page?", a: "Very wide tables are tight on A4. Switch the page size to A3 or turn on landscape, both of which are in the options under the editor." },
       { q: "Do you store my data?", a: "The CSV is turned into a document in your browser. The resulting PDF is kept for one hour so you can download it, then deleted." },
-      { q: "Is it free?", a: "Yes. A few conversions a day with no account, or 1,000 a month with a free key that asks only for an email address." },
+      { q: "Is it free?", a: "Yes. A few conversions a day with no account, or 100 a month with a free key that asks only for an email address." },
     ],
   },
 };
@@ -450,7 +450,7 @@ ${TRANSFORMS}
       if (res.status === 429) {
         // Someone who wants an eleventh document today is the most qualified visitor this page ever
         // gets. Offer both roads out, not just the free key.
-        status.textContent = 'Daily free limit reached. A free key raises it to 1,000 a month, or use the API.';
+        status.textContent = 'Daily free limit reached. A free key raises it to 100 a month, or use the API.';
         showApiNudge(markdown, 'limit');
         track('limit-hit', { page: '${cfg.slug}' });
         return;

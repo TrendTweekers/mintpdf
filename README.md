@@ -40,13 +40,13 @@ curl -X POST https://mintpdf.dev/v1/pdf \
   --output invoice.pdf
 ```
 
-Want more than 10 renders a day? A free key (email only, no card) raises it to 1,000 a month:
+Want more than 3 renders a day? A free key (email only, no card) raises it to 100 a month:
 
 ```bash
 curl -X POST https://mintpdf.dev/v1/keys \
   -H "Content-Type: application/json" \
   -d '{"email":"you@example.com"}'
-# → {"key":"pm_…","daily_limit":1000}   # 1,000 renders per month
+# → {"key":"pm_…","daily_limit":100}   # 100 renders per month
 ```
 
 Then send `Authorization: Bearer pm_…` with your requests.
@@ -128,8 +128,8 @@ variable automatically, so the rest of the collection works straight after.
 
 | Tier | Limit | Price |
 |---|---|---|
-| Anonymous | 10 renders/day per IP | free, no signup |
-| Free key | 1,000 renders/month | free, email only |
+| Anonymous | 3 renders/day per IP | free, no signup |
+| Free key | 100 renders/month | free, email only |
 | Solo | 3,000 renders/month | $19/month |
 | Team | 12,000 renders/month | $49/month |
 | Scale | 50,000 renders/month | $129/month |
