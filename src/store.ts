@@ -146,6 +146,15 @@ export function setTier(
   ).run(tier, polar?.customerId ?? null, polar?.subscriptionId ?? null, key);
 }
 
+/** Units used in a bucket's current window, without consuming any. */
+export function usedThisPeriod(bucket: string, period: "day" | "month" = "day"): number {
+  const day = new Date().toISOString().slice(0, period === "month" ? 7 : 10);
+  const row = db.prepare("SELECT count FROM usage WHERE bucket = ? AND day = ?").get(bucket, day) as
+    | { count: number }
+    | undefined;
+  return row?.count ?? 0;
+}
+
 /** Every key with its owner and lifetime renders, newest first. Admin page only. */
 export function listKeys(): { email: string; tier: string; created: string; renders: number; this_month: number }[] {
   const month = new Date().toISOString().slice(0, 7);

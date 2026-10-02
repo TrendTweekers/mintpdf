@@ -18,6 +18,7 @@ Body: exactly one of `html`, `markdown`, `url`, plus options:
   format (A4, Letter, Legal, A3, A5), landscape, margin, headerText, footerText, pageNumbers,
   output ("pdf" for bytes, "url" for a JSON download link).
 No key needed for a few renders per day. Free key: POST https://mintpdf.dev/v1/keys {"email": "..."}
+Check a key and its usage (free, no render spent): GET https://mintpdf.dev/v1/me with Authorization: Bearer <key>. Unknown key = 401.
 
 ## What the markdown renderer supports
 GitHub-flavoured markdown, including tables with column alignment and fenced code blocks.

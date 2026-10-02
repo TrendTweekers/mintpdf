@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { htmlToPdf, markdownToPdf, urlToPdf, closeBrowser, PdfOptions } from "./pdf.js";
 import {
-  LIMITS, listKeys, consumeQuota, createKey, getKey, findKeyByEmail, findKeyBySubscription,
+  LIMITS, listKeys, usedThisPeriod, consumeQuota, createKey, getKey, findKeyByEmail, findKeyBySubscription,
   setTier, dailyLimitFor, readPdf, storePdf, recordEvent, readStats, isTier, Tier,
 } from "./store.js";
 import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, tierFromEvent, tierAvailable, PolarEvent } from "./polar.js";
@@ -391,6 +391,23 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
   return reply.header("content-type", "application/pdf").send(pdf);
 });
 
+/**
+ * Who am I, at no cost. Integrations (the n8n credential test, for one) need a way to check a key
+ * that does not spend a render, and /v1/pdf cannot be that: an unknown key there is served as
+ * anonymous, not rejected. Here an unknown or missing key is a plain 401.
+ */
+app.get("/v1/me", async (req, reply) => {
+  const auth = String(req.headers.authorization ?? "");
+  const record = auth.startsWith("Bearer ") ? getKey(auth.slice(7)) : undefined;
+  if (!record) return reply.code(401).send({ error: "missing or unknown API key" });
+  const limit = dailyLimitFor(record.tier);
+  return reply.send({
+    tier: record.tier,
+    monthly_limit: limit,
+    used_this_month: usedThisPeriod(`key:${record.key}`, "month"),
+  });
+});
+
 app.post<{ Body: { email?: string } }>("/v1/keys", async (req, reply) => {
   const email = (req.body?.email ?? "").trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
@@ -678,6 +695,15 @@ app.get("/openapi.json", async (_req, reply) =>
             200: { description: "PDF bytes, or a JSON download link" },
             400: { description: "Invalid request" },
             429: { description: "Quota exhausted" },
+          },
+        },
+      },
+      "/v1/me": {
+        get: {
+          summary: "Check an API key and see this month's usage (free, no render spent)",
+          responses: {
+            200: { description: "tier, monthly_limit, used_this_month" },
+            401: { description: "Missing or unknown key" },
           },
         },
       },
