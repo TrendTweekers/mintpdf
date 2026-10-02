@@ -304,7 +304,17 @@ async function renderPage(
       })();
     });
 
+    // page.pdf() prints with print CSS, but "load" only waits for fonts the screen layout uses.
+    // A font referenced only inside @media print was never requested, so the PDF fell back to a
+    // default face. Emulating print first makes the loaded layout the printed one, and waiting on
+    // document.fonts.ready (capped, so one slow font host cannot stall a render) lets them settle.
+    await page.emulateMediaType("print");
     await setup(page);
+    await page
+      .evaluate(() =>
+        Promise.race([document.fonts.ready.then(() => null), new Promise((r) => setTimeout(r, 5_000))]),
+      )
+      .catch(() => {});
 
     const margin = opts.margin ?? "18mm";
     const showHeaderFooter = Boolean(opts.headerText || opts.footerText || opts.pageNumbers);
