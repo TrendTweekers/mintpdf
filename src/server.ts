@@ -219,6 +219,29 @@ interface Quota {
   limit: number;
 }
 
+/**
+ * The one sentence a caller sees at the cap, shared by REST and MCP. Whoever hits it is usually code
+ * or an agent, and an agent repeats this text to its person, so it names the exact next step and the
+ * paid plan rather than only the free key: someone who hits 3 a day from a script is a likely buyer.
+ */
+function limitHint(quota: Quota): string {
+  const solo = `Solo is $19/month for ${LIMITS.solo.toLocaleString("en-US")} renders`;
+  if (!quota.keyed) {
+    return (
+      `The anonymous trial is ${LIMITS.anonymousPerDay} renders a day. ` +
+      `For ${LIMITS.free} a month, POST ${BASE_URL}/v1/keys with {"email":"you@example.com"} and send the key as "Authorization: Bearer <key>". ` +
+      `${solo}: get the free key, then POST ${BASE_URL}/v1/upgrade with {"key":"<key>","tier":"solo"} for a checkout link, or use ${BASE_URL}/#keys.`
+    );
+  }
+  if (quota.overage) {
+    return `Past ${OVERAGE_FACTOR}x the included ${quota.limit} renders on this key. Move up a plan: POST ${BASE_URL}/v1/upgrade with {"key":"<key>","tier":"team"} for a checkout link, or use ${BASE_URL}/#keys.`;
+  }
+  return (
+    `This free key has used its ${quota.limit} renders this month. ` +
+    `${solo}: POST ${BASE_URL}/v1/upgrade with {"key":"<key>","tier":"solo"} for a checkout link, or use ${BASE_URL}/#keys. Same key, nothing else changes.`
+  );
+}
+
 function rateLimit(req: { headers: Record<string, unknown>; ip: string }): Quota {
   const auth = String(req.headers.authorization ?? "");
   const presented = auth.startsWith("Bearer ") ? auth.slice(7) : null;
@@ -310,9 +333,7 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
     );
     return reply.code(429).send({
       error: "daily limit reached",
-      hint: quota.keyed
-        ? `Past ${OVERAGE_FACTOR}x the included ${quota.limit} renders on this key. Get in touch or move up a plan at /#pricing.`
-        : `Anonymous trial is ${LIMITS.anonymousPerDay}/day. POST /v1/keys {\"email\":\"you@example.com\"} for a free key (${LIMITS.free}/month).`,
+      hint: limitHint(quota),
     });
   }
 
@@ -395,6 +416,7 @@ app.post<{ Body: { email?: string } }>("/v1/keys", async (req, reply) => {
     tier: issued.tier,
     monthly_limit: dailyLimitFor(issued.tier),
     daily_limit: dailyLimitFor(issued.tier),
+    upgrade: `POST ${BASE_URL}/v1/upgrade with {"key":"${issued.key}","tier":"solo"} for a checkout link. Solo is $19/month for ${LIMITS.solo.toLocaleString("en-US")} renders, same key.`,
     ...(issued.paidKeyExists
       ? { note: "This address already has a paid key. For security we cannot move a subscription automatically; contact us and we will move it." }
       : {}),
@@ -416,9 +438,16 @@ app.post("/mcp", async (req, reply) => {
   const isToolCall = (req.body as { method?: string } | null)?.method === "tools/call";
   const quota = isToolCall ? rateLimit(req) : { ok: true };
   if (!quota.ok) {
+    recordEvent({
+      kind: "limit",
+      visitor: visitorHash(req.ip),
+      ref: "mcp",
+      detail: "keyed" in quota && quota.keyed ? "keyed" : "anonymous",
+    });
+    reply.header("retry-after", String(secondsUntilQuotaReset("keyed" in quota && quota.keyed)));
     return reply.code(429).send({
       jsonrpc: "2.0",
-      error: { code: -32000, message: "daily limit reached; POST /v1/keys for a free key" },
+      error: { code: -32000, message: `Limit reached. ${limitHint(quota as Quota)}` },
       id: null,
     });
   }
@@ -492,9 +521,9 @@ app.get("/upgrade/done", async (_req, reply) =>
 <title>Subscribed — MintPDF</title>
 <body style="background:#0a0e0c;color:#e9f1ed;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
 display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">
-<div><h1 style="color:#3ce0a5">You're on Solo.</h1>
-<p style="color:#8ea69c;max-width:44ch;line-height:1.7">Your existing API key now has ${LIMITS.solo}
-renders a month. Nothing else to set up: keep sending the same key.</p>
+<div><h1 style="color:#3ce0a5">You're subscribed.</h1>
+<p style="color:#8ea69c;max-width:44ch;line-height:1.7">Your plan is active on your existing API key
+within a minute. Nothing else to set up: keep sending the same key.</p>
 <p><a href="/" style="color:#3ce0a5">Back to MintPDF</a></p></div></body>`),
 );
 

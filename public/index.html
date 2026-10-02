@@ -271,6 +271,8 @@ code { font-family: var(--f-mono); }
 @media (min-width: 780px) { .tiers { grid-template-columns: repeat(4, 1fr); } }
 .tier { background: var(--surface); padding: 20px; transition: background .18s ease; }
 .tier:hover { background: var(--raised); }
+a.tier { display: block; color: inherit; text-decoration: none; }
+.tier .go { margin-top: 12px; font-size: 12.5px; color: var(--acc); }
 .tier .nm { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; color: var(--mut); text-transform: uppercase; }
 .tier .pr { font-size: 24px; font-weight: 620; letter-spacing: -.03em; margin: 10px 0 3px; }
 .tier .pr span { font-size: 12.5px; font-weight: 400; color: var(--mut); letter-spacing: 0; }
@@ -497,21 +499,24 @@ footer .sp { margin-left: auto; }
           <div class="pr">$0</div>
           <div class="vol">100 / month, or 3 a day with no account</div>
         </div>
-        <div class="tier">
+        <a class="tier" href="#keys" data-tier="solo">
           <div class="nm">Solo</div>
           <div class="pr">$19 <span>/mo</span></div>
           <div class="vol">3,000 / month</div>
-        </div>
-        <div class="tier">
+        <div class="go">Choose →</div>
+        </a>
+        <a class="tier" href="#keys" data-tier="team">
           <div class="nm">Team</div>
           <div class="pr">$49 <span>/mo</span></div>
           <div class="vol">12,000 / month</div>
-        </div>
-        <div class="tier">
+        <div class="go">Choose →</div>
+        </a>
+        <a class="tier" href="#keys" data-tier="scale">
           <div class="nm">Scale</div>
           <div class="pr">$129 <span>/mo</span></div>
           <div class="vol">50,000 / month</div>
-        </div>
+        <div class="go">Choose →</div>
+        </a>
       </div>
     </div>
   </section>
@@ -631,7 +636,10 @@ footer .sp { margin-left: auto; }
         try { if (window.umami) window.umami.track('key-created', { page: 'home' }); } catch (e) {}
         out.innerHTML = 'Your key: <code id="k">' + data.key + '</code>' +
           '<button class="copy" type="button">copy</button><br>' +
-          'Send it as <code>Authorization: Bearer …</code> · ' + data.daily_limit + '/day.';
+          'Send it as <code>Authorization: Bearer …</code> · ' + data.monthly_limit + ' renders a month.';
+        // The upgrade form sits right beside this one: hand the key across so paying is one click.
+        var upkey = document.getElementById('upkey');
+        if (upkey && !upkey.value) upkey.value = data.key;
         out.querySelector('.copy').onclick = function () {
           navigator.clipboard.writeText(data.key);
           this.textContent = 'copied';
@@ -788,6 +796,14 @@ footer .sp { margin-left: auto; }
       }
     });
   })();
+
+  // Paid tier cards preselect their plan in the upgrade form below.
+  document.querySelectorAll('a.tier[data-tier]').forEach(function (a) {
+    a.addEventListener('click', function () {
+      var sel = document.getElementById('uptier');
+      if (sel) sel.value = a.getAttribute('data-tier');
+    });
+  });
 
   var up = document.getElementById('upform');
   var upout = document.getElementById('upout');
