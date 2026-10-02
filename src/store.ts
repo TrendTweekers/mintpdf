@@ -146,6 +146,20 @@ export function setTier(
   ).run(tier, polar?.customerId ?? null, polar?.subscriptionId ?? null, key);
 }
 
+/** Every key with its owner and lifetime renders, newest first. Admin page only. */
+export function listKeys(): { email: string; tier: string; created: string; renders: number; this_month: number }[] {
+  const month = new Date().toISOString().slice(0, 7);
+  return db
+    .prepare(
+      `SELECT k.email, k.tier, date(k.created_at / 1000, 'unixepoch') AS created,
+              COALESCE(SUM(u.count), 0) AS renders,
+              COALESCE(SUM(CASE WHEN u.day = ? THEN u.count END), 0) AS this_month
+         FROM api_keys k LEFT JOIN usage u ON u.bucket = 'key:' || k.key
+        GROUP BY k.key ORDER BY k.created_at DESC`,
+    )
+    .all(month) as { email: string; tier: string; created: string; renders: number; this_month: number }[];
+}
+
 /** Consumes one unit from a bucket's window. Returns remaining, or -1 if exhausted. */
 export function consumeQuota(bucket: string, limit: number, period: "day" | "month" = "day"): number {
   const day = new Date().toISOString().slice(0, period === "month" ? 7 : 10);

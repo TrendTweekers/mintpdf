@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { htmlToPdf, markdownToPdf, urlToPdf, closeBrowser, PdfOptions } from "./pdf.js";
 import {
-  LIMITS, consumeQuota, createKey, getKey, findKeyByEmail, findKeyBySubscription,
+  LIMITS, listKeys, consumeQuota, createKey, getKey, findKeyByEmail, findKeyBySubscription,
   setTier, dailyLimitFor, readPdf, storePdf, recordEvent, readStats, isTier, Tier,
 } from "./store.js";
 import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, tierFromEvent, tierAvailable, PolarEvent } from "./polar.js";
@@ -610,7 +610,8 @@ ${table("Referrers (humans)", s.refs)}
 ${table("Countries (humans)", s.countries)}
 ${table("Renders by source", s.renders)}
 ${table("Turned away at the limit", s.turnedAway)}
-${table("Bot traffic by country", s.botsSeen)}`,
+${table("Bot traffic by country", s.botsSeen)}
+${table("API keys", listKeys())}`,
   );
 });
 
