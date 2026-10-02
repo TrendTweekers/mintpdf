@@ -276,8 +276,12 @@ ${relatedHtml}
   });
 }
 
-export function renderSitemap(baseUrl: string): string {
-  const urls = [
+/**
+ * Every public, indexable path. One list so the sitemap and the IndexNow ping cannot drift: they
+ * did, and IndexNow silently never submitted the tool pages, the flagship /markdown-to-pdf included.
+ */
+export function publicPaths(): string[] {
+  return [
     "",
     "/markdown-to-pdf",
     "/json-to-pdf",
@@ -285,6 +289,10 @@ export function renderSitemap(baseUrl: string): string {
     "/guides",
     ...getPosts().map((p) => `/guides/${p.slug}`),
   ];
+}
+
+export function renderSitemap(baseUrl: string): string {
+  const urls = publicPaths();
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((u) => `  <url><loc>${baseUrl}${u}</loc></url>`).join("\n")}

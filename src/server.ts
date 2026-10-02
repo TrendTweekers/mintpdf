@@ -10,7 +10,7 @@ import {
 } from "./store.js";
 import { billingEnabled, createCheckout, verifyWebhook, apiKeyFromEvent, tierFromEvent, tierAvailable, PolarEvent } from "./polar.js";
 import { handleMcpRequest } from "./mcp.js";
-import { getPost, getPosts, getPostSource, renderIndex, renderPost, renderSitemap, STYLE, MARK, FAVICON } from "./blog.js";
+import { getPost, getPosts, getPostSource, publicPaths, renderIndex, renderPost, renderSitemap, STYLE, MARK, FAVICON } from "./blog.js";
 import { renderTool } from "./tool.js";
 import { renderConverter, CONVERTER_SLUGS } from "./converters.js";
 import { notify, notifyOnce, notifyEnabled, escapeHtml, locate, firstToday } from "./notify.js";
@@ -596,7 +596,7 @@ app.post("/internal/indexnow", async (req, reply) => {
     return reply.code(401).send({ error: "unauthorized" });
   }
   const host = new URL(BASE_URL).host;
-  const urlList = ["", "/guides", ...getPosts().map((post) => `/guides/${post.slug}`)].map((u) => `${BASE_URL}${u}`);
+  const urlList = publicPaths().map((u) => `${BASE_URL}${u}`);
   const res = await fetch("https://api.indexnow.org/indexnow", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
