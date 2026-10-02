@@ -518,7 +518,7 @@ app.post("/webhooks/polar", async (req, reply) => {
 
 app.get("/upgrade/done", async (_req, reply) =>
   reply.type("text/html; charset=utf-8").send(`<!doctype html><meta charset="utf-8">
-<title>Subscribed — MintPDF</title>
+<title>Subscribed | MintPDF</title>
 <body style="background:#0a0e0c;color:#e9f1ed;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
 display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center">
 <div><h1 style="color:#3ce0a5">You're subscribed.</h1>

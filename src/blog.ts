@@ -220,7 +220,7 @@ export function renderIndex(baseUrl: string): string {
         .join("\n")
     : `<p style="color:var(--mut)">First guides are being written. Check back shortly.</p>`;
   return shell({
-    title: "Guides — MintPDF",
+    title: "Guides | MintPDF",
     description: "Practical guides on generating PDFs from HTML, Markdown and AI agents.",
     canonical: `${baseUrl}/guides`,
     body: `<div class="cell"><span class="tag">GUIDES</span>
@@ -262,7 +262,7 @@ export function renderPost(post: Post, baseUrl: string): string {
     : "";
 
   return shell({
-    title: `${post.title} — MintPDF`,
+    title: `${post.title} | MintPDF`,
     description: post.description,
     canonical: `${baseUrl}/guides/${post.slug}`,
     schema,
