@@ -727,7 +727,13 @@ app.get("/openapi.json", async (_req, reply) =>
 
 app.get("/robots.txt", async (_req, reply) =>
   reply.type("text/plain").send(
-    `User-agent: *\nContent-Signal: ai-train=yes, search=yes, ai-input=yes\nAllow: /\n\n` +
+    `User-agent: *\nContent-Signal: ai-train=yes, search=yes, ai-input=yes\nAllow: /\n` +
+      // API endpoints, not pages. Google found them in the docs and reported them as 404 (GET on
+      // POST routes, expired /f/ links), 405 and 401, spending crawl on URLs that can never index.
+      ["/v1/", "/f/", "/mcp", "/webhooks/", "/admin/", "/internal/", "/upgrade/"]
+        .map((p) => `Disallow: ${p}\n`)
+        .join("") +
+      `\n` +
       `# Machine-readable descriptions\n` +
       `# ${BASE_URL}/llms.txt\n# ${BASE_URL}/openapi.json\n# ${BASE_URL}/.well-known/mcp.json\n\n` +
       `Sitemap: ${BASE_URL}/sitemap.xml\n`,
