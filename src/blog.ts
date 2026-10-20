@@ -298,6 +298,12 @@ export function renderSitemap(baseUrl: string): string {
   const urls = publicPaths();
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((u) => `  <url><loc>${baseUrl}${u}</loc></url>`).join("\n")}
+${urls
+  .map((u) => {
+    // lastmod tells Google which guides are new, so it fetches those first.
+    const date = u.startsWith("/guides/") ? getPost(u.slice(8))?.date : undefined;
+    return `  <url><loc>${baseUrl}${u}</loc>${date ? `<lastmod>${date}</lastmod>` : ""}</url>`;
+  })
+  .join("\n")}
 </urlset>`;
 }

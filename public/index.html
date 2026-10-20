@@ -242,6 +242,9 @@ h1 em { font-style: normal; color: var(--mut); }
 .sec-num { font-family: var(--f-mono); font-size: 11px; color: var(--mut); letter-spacing: .1em; flex: none; }
 h2 { font-size: clamp(1.15rem, 2.1vw, 1.5rem); font-weight: 600; letter-spacing: -.02em; margin: 0; }
 .sec-head p { margin: 0 0 0 auto; color: var(--mut); font-size: 13px; text-align: right; }
+.guide-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.guide-list a { color: var(--ink-dim); text-decoration: none; border-bottom: 1px solid var(--line, rgba(255,255,255,.12)); }
+.guide-list a:hover { color: var(--acc); }
 @media (max-width: 700px) { .sec-head { flex-wrap: wrap; } .sec-head p { margin: 4px 0 0; text-align: left; width: 100%; } }
 
 .cols { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -557,6 +560,27 @@ footer .sp { margin-left: auto; }
           <div class="out" id="upout"></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- Newest guides. The homepage is the page Google crawls most, so new guides are linked here
+       first; otherwise they wait for the sitemap and stay "unknown to Google" for weeks. -->
+  <section class="sec" id="guides">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-num">06</span>
+        <h2>Guides</h2>
+        <p><a href="/guides">All guides</a></p>
+      </div>
+      <ul class="guide-list">
+        <li><a href="/guides/puppeteer-pdf-header-footer">Puppeteer PDF headers and footers with page numbers</a></li>
+        <li><a href="/guides/headless-chrome-pdf-fonts">Fonts missing in Puppeteer PDFs: every cause and fix</a></li>
+        <li><a href="/guides/invoice-pdf-html-nodejs">Generate invoice PDFs from HTML templates in Node.js</a></li>
+        <li><a href="/guides/markdown-pdf-diagrams-and-math">Mermaid diagrams and math in a Markdown-to-PDF API</a></li>
+        <li><a href="/guides/ssrf-headless-browser">If you render user HTML, you have an SSRF problem</a></li>
+      </ul>
     </div>
   </section>
 
