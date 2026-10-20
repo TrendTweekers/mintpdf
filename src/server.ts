@@ -332,7 +332,7 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
         : `<${BASE_URL}/v1/keys>; rel="help"; title="POST an email here for a free key, ${LIMITS.free}/month"`,
     );
     return reply.code(429).send({
-      error: "daily limit reached",
+      error: quota.keyed ? "monthly limit reached" : "daily limit reached",
       hint: limitHint(quota),
     });
   }
