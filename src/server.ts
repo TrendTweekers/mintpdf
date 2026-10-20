@@ -183,6 +183,13 @@ function validatePdfOptions(o: PdfOptions): string | null {
       return "scale must be a number between 0.1 and 2";
     }
   }
+  for (const k of ["landscape", "printBackground", "pageNumbers"] as const) {
+    // An empty string reached Chromium and came back as a raw "Protocol error" 500.
+    if (o[k] !== undefined && typeof o[k] !== "boolean") return `${k} must be true or false`;
+  }
+  for (const k of ["headerText", "footerText"] as const) {
+    if (o[k] !== undefined && typeof o[k] !== "string") return `${k} must be a string`;
+  }
   if (o.margin !== undefined && !MARGIN_PATTERN.test(String(o.margin))) {
     return 'margin must be a CSS length such as "18mm"';
   }
@@ -287,6 +294,21 @@ function secondsUntilQuotaReset(keyed: boolean): number {
 }
 
 app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
+  // Validate before metering: a request that can never render must not spend the caller's quota.
+  const body = req.body ?? ({} as PdfBody);
+  const sources = [body.html, body.markdown, body.url].filter((s) => typeof s === "string" && s.length > 0);
+  if (sources.length !== 1) {
+    return reply.code(400).send({ error: "provide exactly one of html, markdown, url" });
+  }
+
+  // Check the paper options before Chromium sees them. Unvalidated, these reach Puppeteer and come
+  // back as 500s quoting its internals ("scale is outside of [0.1 - 2] range", or a bare TypeError
+  // for an unknown format), which reads as our fault rather than a bad request. The MCP route
+  // already validates the same fields with zod; this keeps the REST route honest about its own
+  // documented enum too, since Chromium silently accepts sizes we do not advertise.
+  const optionError = validatePdfOptions(body);
+  if (optionError) return reply.code(400).send({ error: optionError });
+
   const quota = rateLimit(req);
   reply.header("x-ratelimit-remaining", String(Math.max(quota.remaining, 0)));
 
@@ -337,19 +359,6 @@ app.post<{ Body: PdfBody }>("/v1/pdf", async (req, reply) => {
     });
   }
 
-  const body = req.body ?? ({} as PdfBody);
-  const sources = [body.html, body.markdown, body.url].filter((s) => typeof s === "string" && s.length > 0);
-  if (sources.length !== 1) {
-    return reply.code(400).send({ error: "provide exactly one of html, markdown, url" });
-  }
-
-  // Check the paper options before Chromium sees them. Unvalidated, these reach Puppeteer and come
-  // back as 500s quoting its internals ("scale is outside of [0.1 - 2] range", or a bare TypeError
-  // for an unknown format), which reads as our fault rather than a bad request. The MCP route
-  // already validates the same fields with zod; this keeps the REST route honest about its own
-  // documented enum too, since Chromium silently accepts sizes we do not advertise.
-  const optionError = validatePdfOptions(body);
-  if (optionError) return reply.code(400).send({ error: optionError });
 
   let pdf: Buffer;
   try {
