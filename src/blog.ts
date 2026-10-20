@@ -147,8 +147,9 @@ export const MARK = `<svg width="26" height="26" viewBox="0 0 48 48" aria-hidden
   <path d="M18 19C18 11 25 6 35 6c0 9-7 14-17 13z" fill="#3ce0a5"/>
   <path d="M18 32c0-7 6-11 14-11 0 8-6 12-14 11z" fill="#3ce0a5" opacity=".5"/></svg>`;
 
-export const FAVICON =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%233ce0a5'/%3E%3Cpath d='M19 40V16' stroke='%23052b1e' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M19 21c0-7 6-11 14-11 0 8-6 12-14 11z' fill='%23052b1e'/%3E%3Cpath d='M19 33c0-6 5-9 11-9 0 7-4 10-11 9z' fill='%23052b1e' opacity='.55'/%3E%3C/svg%3E";
+// A real URL, not a data: URI. Google only shows a site icon in results (and Search Console)
+// when it can crawl the icon at its own address; the inline data: URI left mintpdf.dev iconless.
+export const FAVICON = "/favicon.svg";
 
 function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
@@ -181,7 +182,9 @@ function shell(opts: {
 <meta name="twitter:title" content="${esc(opts.title)}">
 <meta name="twitter:description" content="${esc(opts.description)}">
 <meta name="twitter:image" content="${origin}/og.png">
-<link rel="icon" href="${FAVICON}">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 ${opts.schema ? `<script type="application/ld+json">${opts.schema}</script>` : ""}
 <style>${STYLE}</style>${ANALYTICS}</head><body>
 <div class="wrap">

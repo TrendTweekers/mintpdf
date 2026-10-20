@@ -121,7 +121,9 @@ export function renderTool(baseUrl: string, mark: string, favicon: string, style
 <meta name="twitter:title" content="Markdown to PDF | Free MD to PDF converter, no signup">
 <meta name="twitter:description" content="Paste Markdown, get a styled PDF. Diagrams, maths and tables included. No signup, no watermark.">
 <meta name="twitter:image" content="${baseUrl}/og.png">
-<link rel="icon" href="${favicon}">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"Markdown to PDF converter",
  "url":"${baseUrl}/markdown-to-pdf","applicationCategory":"UtilitiesApplication",
