@@ -285,7 +285,7 @@ ${relatedHtml}
  */
 export function publicPaths(): string[] {
   return [
-    "",
+    "/",
     "/markdown-to-pdf",
     "/json-to-pdf",
     "/csv-to-pdf",
